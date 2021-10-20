@@ -59,7 +59,6 @@ namespace CG
         #endregion
         
         [UI] private ComboBoxText _projectionMode = null;
-        [UI] private ComboBoxText _polygonColorMode = null;
 
         private float _defaultScale = 200;
         private float _compressedScale = 1;
@@ -87,13 +86,7 @@ namespace CG
             Top,
             Isometric
         }
-        
-        private enum ColorMode
-        {
-            DarkBlue,
-            Multicolored
-        }
-        
+
         private List<Vector3> _polygonColors; //цвета полиговнов
 
         private Mesh _cube = new Mesh(new List<Vertex> 
@@ -198,8 +191,6 @@ namespace CG
 
             _projectionMode.Changed += (o, args) => { SetProjection(); CalculateTranformationMatrix(); _canvas.QueueDraw();};
             
-            _polygonColorMode.Changed += (o, args) => { _canvas.QueueDraw(); };
-
             #endregion
 
             #region Обработка матрицы
@@ -327,10 +318,7 @@ namespace CG
             
             for (int i = 0; i < mesh.TransformedPolygons.Count; ++i)
             {
-                if (_polygonColorMode.Active == (int)ColorMode.DarkBlue)
-                    DrawPolygon(context, mesh.TransformedPolygons[i], _darkBlue);
-                if (_polygonColorMode.Active == (int)ColorMode.Multicolored)
-                    DrawPolygon(context, mesh.TransformedPolygons[i], _polygonColors[i]);
+                DrawPolygon(context, mesh.TransformedPolygons[i], _darkBlue);
             }
         }
 

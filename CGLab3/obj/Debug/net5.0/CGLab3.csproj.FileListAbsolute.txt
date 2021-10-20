@@ -17,7 +17,6 @@ C:\Users\prota\Desktop\CGLabs\CGLab3\obj\Debug\net5.0\CGLab3.GeneratedMSBuildEdi
 C:\Users\prota\Desktop\CGLabs\CGLab3\obj\Debug\net5.0\CGLab3.AssemblyInfoInputs.cache
 C:\Users\prota\Desktop\CGLabs\CGLab3\obj\Debug\net5.0\CGLab3.AssemblyInfo.cs
 C:\Users\prota\Desktop\CGLabs\CGLab3\obj\Debug\net5.0\CGLab3.csproj.CoreCompileInputs.cache
-C:\Users\prota\Desktop\CGLabs\CGLab3\obj\Debug\net5.0\CGLab3.csproj.CopyComplete
 C:\Users\prota\Desktop\CGLabs\CGLab3\obj\Debug\net5.0\CGLab3.dll
 C:\Users\prota\Desktop\CGLabs\CGLab3\obj\Debug\net5.0\ref\CGLab3.dll
 C:\Users\prota\Desktop\CGLabs\CGLab3\obj\Debug\net5.0\CGLab3.pdb
