@@ -1,7 +1,7 @@
 using System;
 using Gtk;
 
-namespace CGLab3
+namespace CG
 {
     class Program
     {
