@@ -1,0 +1,16 @@
+{
+  "version": 2,
+  "dgSpecHash": "YROl8cQu8qfCV1QZdVNJGnAS1KE5GyIOaYUnuEh19guRWSHMIZESz1IVW93ym1UY5VhOhS8HB2OFAVh75Xp3oQ==",
+  "success": true,
+  "projectFilePath": "C:\\Users\\prota\\Desktop\\CGLabs\\CGLab3\\CGLab3.csproj",
+  "expectedPackageFiles": [
+    "C:\\Users\\prota\\.nuget\\packages\\atksharp\\3.24.24.34\\atksharp.3.24.24.34.nupkg.sha512",
+    "C:\\Users\\prota\\.nuget\\packages\\cairosharp\\3.24.24.34\\cairosharp.3.24.24.34.nupkg.sha512",
+    "C:\\Users\\prota\\.nuget\\packages\\gdksharp\\3.24.24.34\\gdksharp.3.24.24.34.nupkg.sha512",
+    "C:\\Users\\prota\\.nuget\\packages\\giosharp\\3.24.24.34\\giosharp.3.24.24.34.nupkg.sha512",
+    "C:\\Users\\prota\\.nuget\\packages\\glibsharp\\3.24.24.34\\glibsharp.3.24.24.34.nupkg.sha512",
+    "C:\\Users\\prota\\.nuget\\packages\\gtksharp\\3.24.24.34\\gtksharp.3.24.24.34.nupkg.sha512",
+    "C:\\Users\\prota\\.nuget\\packages\\pangosharp\\3.24.24.34\\pangosharp.3.24.24.34.nupkg.sha512"
+  ],
+  "logs": []
+}
