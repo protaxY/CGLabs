@@ -8,7 +8,6 @@ namespace CG
     {
         public Ellipsoid(float a, float b, float c, int meridiansCount, int parallelsCount)
         {
-            
             Vertices.Add(new Vertex(0, 0, c));
             TransformedVertices.Add(new Vertex());
             for (int i = 1; i < parallelsCount + 1; ++i)

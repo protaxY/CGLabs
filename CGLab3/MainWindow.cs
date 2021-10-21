@@ -42,6 +42,36 @@ namespace CG
         [UI] private Adjustment _meridiansCount = null;
         [UI] private Adjustment _parallelsCount = null;
 
+        [UI] private Adjustment _materialColorR = null;
+        [UI] private Adjustment _materialColorG = null;
+        [UI] private Adjustment _materialColorB = null;
+        
+        [UI] private Adjustment _I_aR = null;
+        [UI] private Adjustment _I_aG = null;
+        [UI] private Adjustment _I_aB = null;
+        
+        [UI] private Adjustment _I_dR = null;
+        [UI] private Adjustment _I_dG = null;
+        [UI] private Adjustment _I_dB = null;
+        
+        [UI] private Adjustment _I_sR = null;
+        [UI] private Adjustment _I_sG = null;
+        [UI] private Adjustment _I_sB = null;
+        
+        [UI] private Adjustment _p = null;
+
+        [UI] private Adjustment _ambientLightColorR = null;
+        [UI] private Adjustment _ambientLightColorG = null;
+        [UI] private Adjustment _ambientLightColorB = null;
+        
+        [UI] private Adjustment _pointLightIntensityR = null;
+        [UI] private Adjustment _pointLightIntensityG = null;
+        [UI] private Adjustment _pointLightIntensityB = null;
+        
+        [UI] private Adjustment _pointLightPositionX = null;
+        [UI] private Adjustment _pointLightPositionY = null;
+        [UI] private Adjustment _pointLightPositionZ = null;
+
         #endregion
 
         #region UI матрицы
@@ -116,7 +146,7 @@ namespace CG
             {
                 var context = args.Cr;
                 
-                context.SetSourceRGB(.2, .2, .2);
+                context.SetSourceRGB(0, 0, 0);
                 context.Paint();
 
                 context.Antialias = Antialias.Subpixel;

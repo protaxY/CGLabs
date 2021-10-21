@@ -42,6 +42,11 @@
     <property name="step_increment">0.10000000000000001</property>
     <property name="page_increment">0.10000000000000001</property>
   </object>
+  <object class="GtkAdjustment">
+    <property name="upper">1</property>
+    <property name="step_increment">0.10000000000000001</property>
+    <property name="page_increment">0.10000000000000001</property>
+  </object>
   <object class="GtkAdjustment" id="_a">
     <property name="lower">-100</property>
     <property name="upper">100</property>
@@ -230,19 +235,19 @@
     <property name="step_increment">0.10000000000000001</property>
     <property name="page_increment">0.10000000000000001</property>
   </object>
-  <object class="GtkAdjustment" id="_pointLightPositionB">
+  <object class="GtkAdjustment" id="_pointLightPositionX">
     <property name="lower">-1000</property>
     <property name="upper">1000</property>
     <property name="step_increment">0.10000000000000001</property>
     <property name="page_increment">10</property>
   </object>
-  <object class="GtkAdjustment" id="_pointLightPositionG">
+  <object class="GtkAdjustment" id="_pointLightPositionY">
     <property name="lower">-1000</property>
     <property name="upper">1000</property>
     <property name="step_increment">0.10000000000000001</property>
     <property name="page_increment">10</property>
   </object>
-  <object class="GtkAdjustment" id="_pointLightPositionR">
+  <object class="GtkAdjustment" id="_pointLightPositionZ">
     <property name="lower">-1000</property>
     <property name="upper">1000</property>
     <property name="step_increment">0.10000000000000001</property>
@@ -1698,7 +1703,7 @@
                             <property name="can_focus">True</property>
                             <property name="width_chars">6</property>
                             <property name="text" translatable="yes">1.000</property>
-                            <property name="adjustment">_materialColorB</property>
+                            <property name="adjustment">_ambientLightColorB</property>
                             <property name="digits">3</property>
                             <property name="value">1</property>
                           </object>
@@ -1728,7 +1733,7 @@
                             <property name="can_focus">True</property>
                             <property name="width_chars">6</property>
                             <property name="text" translatable="yes">1.000</property>
-                            <property name="adjustment">_materialColorG</property>
+                            <property name="adjustment">_ambientLightColorG</property>
                             <property name="digits">3</property>
                             <property name="value">1</property>
                           </object>
@@ -1758,7 +1763,7 @@
                             <property name="can_focus">True</property>
                             <property name="width_chars">6</property>
                             <property name="text" translatable="yes">1.000</property>
-                            <property name="adjustment">_materialColorR</property>
+                            <property name="adjustment">_ambientLightColorR</property>
                             <property name="digits">3</property>
                             <property name="value">1</property>
                           </object>
@@ -1866,7 +1871,7 @@
                             <property name="can_focus">True</property>
                             <property name="width_chars">6</property>
                             <property name="text" translatable="yes">1.000</property>
-                            <property name="adjustment">_materialColorG</property>
+                            <property name="adjustment">_pointLightIntensityG</property>
                             <property name="digits">3</property>
                             <property name="value">1</property>
                           </object>
@@ -1896,7 +1901,7 @@
                             <property name="can_focus">True</property>
                             <property name="width_chars">6</property>
                             <property name="text" translatable="yes">1.000</property>
-                            <property name="adjustment">_materialColorR</property>
+                            <property name="adjustment">_pointLightIntensityR</property>
                             <property name="digits">3</property>
                             <property name="value">1</property>
                           </object>
@@ -1949,7 +1954,7 @@
                             <property name="can_focus">True</property>
                             <property name="width_chars">6</property>
                             <property name="text" translatable="yes">0.000</property>
-                            <property name="adjustment">_zShift</property>
+                            <property name="adjustment">_pointLightPositionZ</property>
                             <property name="digits">3</property>
                           </object>
                           <packing>
@@ -1978,7 +1983,7 @@
                             <property name="can_focus">True</property>
                             <property name="width_chars">6</property>
                             <property name="text" translatable="yes">0.000</property>
-                            <property name="adjustment">_yShift</property>
+                            <property name="adjustment">_pointLightPositionY</property>
                             <property name="digits">3</property>
                           </object>
                           <packing>
@@ -2007,7 +2012,7 @@
                             <property name="can_focus">True</property>
                             <property name="width_chars">6</property>
                             <property name="text" translatable="yes">0.000</property>
-                            <property name="adjustment">_xShift</property>
+                            <property name="adjustment">_pointLightPositionX</property>
                             <property name="digits">3</property>
                           </object>
                           <packing>
