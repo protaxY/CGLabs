@@ -18,6 +18,11 @@ namespace CG
             Point = new Vector4(x, y, z, 1);
         }
 
+        public Vertex()
+        {
+            Point = new Vector4(0, 0, 0, 1);
+        }
+        
         public Vertex(Vector4 vector4)
         {
             Point = vector4;
@@ -28,6 +33,11 @@ namespace CG
     {
         public List<Vertex> Vertexes;
         public Vector3 Color = new Vector3(0.5f, 0.5f, 0.5f);
+
+        public Polygon(Polygon polygon)
+        {
+            Vertexes = polygon.Vertexes;
+        }
         
         public Polygon(List<Vertex> vertexes)
         {
@@ -61,12 +71,20 @@ namespace CG
         public List<Polygon> Polygons;
         public List<Polygon> TransformedPolygons;
 
-        public Mesh() { }
+        public Mesh()
+        {
+            Vertices = new List<Vertex>();
+            TransformedVertices = new List<Vertex>();
+            Polygons = new List<Polygon>();
+            TransformedPolygons = new List<Polygon>();
+        }
 
         public Mesh(List<Vertex> vertices, List<Polygon> polygons)
         {
             Vertices = vertices;
+            TransformedVertices = new List<Vertex>(Vertices.Count);
             Polygons = polygons;
+            TransformedPolygons = new List<Polygon>(Polygons.Count);
         }
         
         public Mesh(List<Vertex> vertices, List<List<int>> polygons)

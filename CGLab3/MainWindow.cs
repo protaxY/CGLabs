@@ -18,7 +18,7 @@ namespace CG
     {
         [UI] private DrawingArea _canvas = null;
 
-        #region UI спинбоксов и чекбатоннов
+        #region UI спинбаттонов и чекбоксов
 
         [UI] private CheckButton _allowZBuffer = null;
         [UI] private CheckButton _allowNormals = null;
@@ -34,6 +34,13 @@ namespace CG
         [UI] private Adjustment _xShift = null;
         [UI] private Adjustment _yShift = null;
         [UI] private Adjustment _zShift = null;
+        
+        [UI] private Adjustment _a = null;
+        [UI] private Adjustment _b = null;
+        [UI] private Adjustment _c = null;
+        
+        [UI] private Adjustment _meridiansCount = null;
+        [UI] private Adjustment _parallelsCount = null;
 
         #endregion
 
@@ -87,26 +94,7 @@ namespace CG
             Isometric
         }
 
-        private List<Vector3> _polygonColors; //цвета полиговнов
-
-        private Mesh _cube = new Mesh(new List<Vertex> 
-            {
-                new Vertex (new Vector4(-.5f, -.5f, -.5f, 1)),// 0
-                new Vertex (new Vector4(.5f, -.5f, -.5f, 1)), // 1
-                new Vertex (new Vector4(.5f, .5f, -.5f, 1)),  // 2
-                new Vertex (new Vector4(-.5f, .5f, -.5f, 1)), // 3
-                new Vertex (new Vector4(0f, -.5f, .5f, 1)),   // 4
-                new Vertex (new Vector4(0f, .5f, .5f, 1)),    // 5
-            }, 
-            new List<List<int>>
-            {
-                new List<int> {0, 1, 2, 3},
-                new List<int> {3, 5, 4, 0},
-                new List<int> {1, 4, 5, 2},
-                new List<int> {4,1,0},
-                new List<int> {5,3,2}
-            }
-        );
+        private Mesh _figure = new Ellipsoid(1, 1, 1, 16, 8);
 
         public MainWindow() : this(new Builder("CGLab3.glade"))
         {
@@ -116,8 +104,6 @@ namespace CG
                 0, 0, 1, 0,
                 0, 0, 0, 1);
 
-            _polygonColors = GenerateColors(_cube.Polygons.Count);
-            
             CalculateTranformationMatrix();
         }
 
@@ -136,13 +122,13 @@ namespace CG
                 context.Antialias = Antialias.Subpixel;
                 context.LineWidth = 2d;
                 
-                _cube.ApplyTransformation(_transformationMatrix * _defaultTransformationMatrix);
+                _figure.ApplyTransformation(_transformationMatrix * _defaultTransformationMatrix);
                 
-                DrawMesh(context, _cube);
+                DrawMesh(context, _figure);
 
                 if (_allowNormals.Active)
                 {
-                    DrawNormals(context, _cube);
+                    DrawNormals(context, _figure);
                 }
                 
                 CalculateAxisTransformationMatrix();
@@ -191,6 +177,32 @@ namespace CG
 
             _projectionMode.Changed += (o, args) => { SetProjection(); CalculateTranformationMatrix(); _canvas.QueueDraw();};
             
+            _a.ValueChanged += (o, args) => { _figure = new Ellipsoid((float)_a.Value, 
+                    (float)_b.Value, (float)_c.Value, 
+                    (int)_meridiansCount.Value, 
+                    (int)_parallelsCount.Value); 
+                    _canvas.QueueDraw();};
+            _b.ValueChanged += (o, args) => { _figure = new Ellipsoid((float)_a.Value, 
+                    (float)_b.Value, (float)_c.Value, 
+                    (int)_meridiansCount.Value, 
+                    (int)_parallelsCount.Value); 
+                    _canvas.QueueDraw();};
+            _c.ValueChanged += (o, args) => { _figure = new Ellipsoid((float)_a.Value, 
+                    (float)_b.Value, (float)_c.Value, 
+                    (int)_meridiansCount.Value, 
+                    (int)_parallelsCount.Value); 
+                    _canvas.QueueDraw();};
+            _meridiansCount.ValueChanged += (o, args) => { _figure = new Ellipsoid((float)_a.Value, 
+                    (float)_b.Value, (float)_c.Value, 
+                    (int)_meridiansCount.Value, 
+                    (int)_parallelsCount.Value); 
+                _canvas.QueueDraw();};
+            _parallelsCount.ValueChanged += (o, args) => { _figure = new Ellipsoid((float)_a.Value, 
+                    (float)_b.Value, (float)_c.Value, 
+                    (int)_meridiansCount.Value, 
+                    (int)_parallelsCount.Value); 
+                _canvas.QueueDraw();};
+
             #endregion
 
             #region Обработка матрицы
@@ -451,19 +463,6 @@ namespace CG
                 _xRotation.Value = 0;
                 _yRotation.Value = 0;
             }
-        }
-
-        private List<Vector3> GenerateColors(int quantity)
-        {
-            List<Vector3> result = new List<Vector3>(quantity);
-            
-            for (int i = 0; i < quantity; ++i)
-            {
-                var rand = new Random();
-                result.Add(new Vector3((float)rand.Next(255) / 255, (float)rand.Next(255) / 255, (float)rand.Next(255) / 255));
-            }
-
-            return result;
         }
     }
 }
