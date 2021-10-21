@@ -27,6 +27,7 @@ namespace CG
     public class Polygon
     {
         public List<Vertex> Vertexes;
+        public Vector3 Color = new Vector3(0.5f, 0.5f, 0.5f);
         
         public Polygon(List<Vertex> vertexes)
         {
@@ -60,11 +61,13 @@ namespace CG
         public List<Polygon> Polygons;
         public List<Polygon> TransformedPolygons;
 
-        // public Mesh(List<Vertex> vertices, List<Polygon> polygons)
-        // {
-        //     Vertices = vertices;
-        //     Polygons = polygons;
-        // }
+        public Mesh() { }
+
+        public Mesh(List<Vertex> vertices, List<Polygon> polygons)
+        {
+            Vertices = vertices;
+            Polygons = polygons;
+        }
         
         public Mesh(List<Vertex> vertices, List<List<int>> polygons)
         {
