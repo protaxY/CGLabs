@@ -2,51 +2,6 @@
 <!-- Generated with glade 3.22.2 -->
 <interface>
   <requires lib="gtk+" version="3.20"/>
-  <object class="GtkAdjustment" id="_I_aB">
-    <property name="upper">1</property>
-    <property name="step_increment">0.10000000000000001</property>
-    <property name="page_increment">0.10000000000000001</property>
-  </object>
-  <object class="GtkAdjustment" id="_I_aR">
-    <property name="upper">1</property>
-    <property name="step_increment">0.10000000000000001</property>
-    <property name="page_increment">0.10000000000000001</property>
-  </object>
-  <object class="GtkAdjustment" id="_I_dB">
-    <property name="upper">1</property>
-    <property name="step_increment">0.10000000000000001</property>
-    <property name="page_increment">0.10000000000000001</property>
-  </object>
-  <object class="GtkAdjustment" id="_I_dG">
-    <property name="upper">1</property>
-    <property name="step_increment">0.10000000000000001</property>
-    <property name="page_increment">0.10000000000000001</property>
-  </object>
-  <object class="GtkAdjustment" id="_I_dR">
-    <property name="upper">1</property>
-    <property name="step_increment">0.10000000000000001</property>
-    <property name="page_increment">0.10000000000000001</property>
-  </object>
-  <object class="GtkAdjustment" id="_I_sB">
-    <property name="upper">1</property>
-    <property name="step_increment">0.10000000000000001</property>
-    <property name="page_increment">0.10000000000000001</property>
-  </object>
-  <object class="GtkAdjustment" id="_I_sG">
-    <property name="upper">1</property>
-    <property name="step_increment">0.10000000000000001</property>
-    <property name="page_increment">0.10000000000000001</property>
-  </object>
-  <object class="GtkAdjustment" id="_I_sR">
-    <property name="upper">1</property>
-    <property name="step_increment">0.10000000000000001</property>
-    <property name="page_increment">0.10000000000000001</property>
-  </object>
-  <object class="GtkAdjustment">
-    <property name="upper">1</property>
-    <property name="step_increment">0.10000000000000001</property>
-    <property name="page_increment">0.10000000000000001</property>
-  </object>
   <object class="GtkAdjustment" id="_a">
     <property name="lower">-100</property>
     <property name="upper">100</property>
@@ -55,16 +10,19 @@
   </object>
   <object class="GtkAdjustment" id="_ambientLightColorB">
     <property name="upper">100</property>
+    <property name="value">0.10000000000000001</property>
     <property name="step_increment">1</property>
     <property name="page_increment">10</property>
   </object>
   <object class="GtkAdjustment" id="_ambientLightColorG">
     <property name="upper">100</property>
+    <property name="value">0.10000000000000001</property>
     <property name="step_increment">1</property>
     <property name="page_increment">10</property>
   </object>
   <object class="GtkAdjustment" id="_ambientLightColorR">
     <property name="upper">100</property>
+    <property name="value">0.10000000000000001</property>
     <property name="step_increment">1</property>
     <property name="page_increment">10</property>
   </object>
@@ -80,7 +38,47 @@
     <property name="step_increment">0.10000000000000001</property>
     <property name="page_increment">0.10000000000000001</property>
   </object>
-  <object class="GtkAdjustment" id="_i_aG">
+  <object class="GtkAdjustment" id="_k_aB">
+    <property name="upper">1</property>
+    <property name="step_increment">0.10000000000000001</property>
+    <property name="page_increment">0.10000000000000001</property>
+  </object>
+  <object class="GtkAdjustment" id="_k_aG">
+    <property name="upper">1</property>
+    <property name="step_increment">0.10000000000000001</property>
+    <property name="page_increment">0.10000000000000001</property>
+  </object>
+  <object class="GtkAdjustment" id="_k_aR">
+    <property name="upper">1</property>
+    <property name="step_increment">0.10000000000000001</property>
+    <property name="page_increment">0.10000000000000001</property>
+  </object>
+  <object class="GtkAdjustment" id="_k_dB">
+    <property name="upper">1</property>
+    <property name="step_increment">0.10000000000000001</property>
+    <property name="page_increment">0.10000000000000001</property>
+  </object>
+  <object class="GtkAdjustment" id="_k_dG">
+    <property name="upper">1</property>
+    <property name="step_increment">0.10000000000000001</property>
+    <property name="page_increment">0.10000000000000001</property>
+  </object>
+  <object class="GtkAdjustment" id="_k_dR">
+    <property name="upper">1</property>
+    <property name="step_increment">0.10000000000000001</property>
+    <property name="page_increment">0.10000000000000001</property>
+  </object>
+  <object class="GtkAdjustment" id="_k_sB">
+    <property name="upper">1</property>
+    <property name="step_increment">0.10000000000000001</property>
+    <property name="page_increment">0.10000000000000001</property>
+  </object>
+  <object class="GtkAdjustment" id="_k_sG">
+    <property name="upper">1</property>
+    <property name="step_increment">0.10000000000000001</property>
+    <property name="page_increment">0.10000000000000001</property>
+  </object>
+  <object class="GtkAdjustment" id="_k_sR">
     <property name="upper">1</property>
     <property name="step_increment">0.10000000000000001</property>
     <property name="page_increment">0.10000000000000001</property>
@@ -187,17 +185,19 @@
   </object>
   <object class="GtkAdjustment" id="_materialColorB">
     <property name="upper">1</property>
-    <property name="value">2.2351741811588166e-10</property>
+    <property name="value">0.5</property>
     <property name="step_increment">0.10000000000000001</property>
     <property name="page_increment">0.10000000000000001</property>
   </object>
   <object class="GtkAdjustment" id="_materialColorG">
     <property name="upper">1</property>
+    <property name="value">0.5</property>
     <property name="step_increment">0.10000000000000001</property>
     <property name="page_increment">0.10000000000000001</property>
   </object>
   <object class="GtkAdjustment" id="_materialColorR">
     <property name="upper">1</property>
+    <property name="value">0.5</property>
     <property name="step_increment">0.10000000000000001</property>
     <property name="page_increment">0.10000000000000001</property>
   </object>
@@ -222,22 +222,26 @@
   </object>
   <object class="GtkAdjustment" id="_pointLightIntensityB">
     <property name="upper">1</property>
+    <property name="value">1</property>
     <property name="step_increment">0.10000000000000001</property>
     <property name="page_increment">0.10000000000000001</property>
   </object>
   <object class="GtkAdjustment" id="_pointLightIntensityG">
     <property name="upper">1</property>
+    <property name="value">1</property>
     <property name="step_increment">0.10000000000000001</property>
     <property name="page_increment">0.10000000000000001</property>
   </object>
   <object class="GtkAdjustment" id="_pointLightIntensityR">
     <property name="upper">1</property>
+    <property name="value">1</property>
     <property name="step_increment">0.10000000000000001</property>
     <property name="page_increment">0.10000000000000001</property>
   </object>
   <object class="GtkAdjustment" id="_pointLightPositionX">
     <property name="lower">-1000</property>
     <property name="upper">1000</property>
+    <property name="value">2</property>
     <property name="step_increment">0.10000000000000001</property>
     <property name="page_increment">10</property>
   </object>
@@ -1187,7 +1191,7 @@
                             <property name="text" translatable="yes">1.000</property>
                             <property name="adjustment">_materialColorB</property>
                             <property name="digits">3</property>
-                            <property name="value">1</property>
+                            <property name="value">0.5</property>
                           </object>
                           <packing>
                             <property name="expand">False</property>
@@ -1217,7 +1221,7 @@
                             <property name="text" translatable="yes">1.000</property>
                             <property name="adjustment">_materialColorG</property>
                             <property name="digits">3</property>
-                            <property name="value">1</property>
+                            <property name="value">0.5</property>
                           </object>
                           <packing>
                             <property name="expand">False</property>
@@ -1247,7 +1251,7 @@
                             <property name="text" translatable="yes">1.000</property>
                             <property name="adjustment">_materialColorR</property>
                             <property name="digits">3</property>
-                            <property name="value">1</property>
+                            <property name="value">0.5</property>
                           </object>
                           <packing>
                             <property name="expand">False</property>
@@ -1298,7 +1302,7 @@
                             <property name="can_focus">True</property>
                             <property name="width_chars">6</property>
                             <property name="text" translatable="yes">1.000</property>
-                            <property name="adjustment">_I_aB</property>
+                            <property name="adjustment">_k_aB</property>
                             <property name="digits">3</property>
                             <property name="value">1</property>
                           </object>
@@ -1328,7 +1332,7 @@
                             <property name="can_focus">True</property>
                             <property name="width_chars">6</property>
                             <property name="text" translatable="yes">1.000</property>
-                            <property name="adjustment">_i_aG</property>
+                            <property name="adjustment">_k_aG</property>
                             <property name="digits">3</property>
                             <property name="value">1</property>
                           </object>
@@ -1358,7 +1362,7 @@
                             <property name="can_focus">True</property>
                             <property name="width_chars">6</property>
                             <property name="text" translatable="yes">1.000</property>
-                            <property name="adjustment">_I_aR</property>
+                            <property name="adjustment">_k_aR</property>
                             <property name="digits">3</property>
                             <property name="value">1</property>
                           </object>
@@ -1411,7 +1415,7 @@
                             <property name="can_focus">True</property>
                             <property name="width_chars">6</property>
                             <property name="text" translatable="yes">1.000</property>
-                            <property name="adjustment">_I_dB</property>
+                            <property name="adjustment">_k_dB</property>
                             <property name="digits">3</property>
                             <property name="value">1</property>
                           </object>
@@ -1441,7 +1445,7 @@
                             <property name="can_focus">True</property>
                             <property name="width_chars">6</property>
                             <property name="text" translatable="yes">1.000</property>
-                            <property name="adjustment">_I_dG</property>
+                            <property name="adjustment">_k_dG</property>
                             <property name="digits">3</property>
                             <property name="value">1</property>
                           </object>
@@ -1471,7 +1475,7 @@
                             <property name="can_focus">True</property>
                             <property name="width_chars">6</property>
                             <property name="text" translatable="yes">1.000</property>
-                            <property name="adjustment">_I_dR</property>
+                            <property name="adjustment">_k_dR</property>
                             <property name="digits">3</property>
                             <property name="value">1</property>
                           </object>
@@ -1524,7 +1528,7 @@
                             <property name="can_focus">True</property>
                             <property name="width_chars">6</property>
                             <property name="text" translatable="yes">1.000</property>
-                            <property name="adjustment">_I_sB</property>
+                            <property name="adjustment">_k_sB</property>
                             <property name="digits">3</property>
                             <property name="value">1</property>
                           </object>
@@ -1554,7 +1558,7 @@
                             <property name="can_focus">True</property>
                             <property name="width_chars">6</property>
                             <property name="text" translatable="yes">1.000</property>
-                            <property name="adjustment">_I_sG</property>
+                            <property name="adjustment">_k_sG</property>
                             <property name="digits">3</property>
                             <property name="value">1</property>
                           </object>
@@ -1584,7 +1588,7 @@
                             <property name="can_focus">True</property>
                             <property name="width_chars">6</property>
                             <property name="text" translatable="yes">1.000</property>
-                            <property name="adjustment">_I_sR</property>
+                            <property name="adjustment">_k_sR</property>
                             <property name="digits">3</property>
                             <property name="value">1</property>
                           </object>
@@ -1705,7 +1709,7 @@
                             <property name="text" translatable="yes">1.000</property>
                             <property name="adjustment">_ambientLightColorB</property>
                             <property name="digits">3</property>
-                            <property name="value">1</property>
+                            <property name="value">0.10000000000000001</property>
                           </object>
                           <packing>
                             <property name="expand">False</property>
@@ -1735,7 +1739,7 @@
                             <property name="text" translatable="yes">1.000</property>
                             <property name="adjustment">_ambientLightColorG</property>
                             <property name="digits">3</property>
-                            <property name="value">1</property>
+                            <property name="value">0.10000000000000001</property>
                           </object>
                           <packing>
                             <property name="expand">False</property>
@@ -1765,7 +1769,7 @@
                             <property name="text" translatable="yes">1.000</property>
                             <property name="adjustment">_ambientLightColorR</property>
                             <property name="digits">3</property>
-                            <property name="value">1</property>
+                            <property name="value">0.10000000000000001</property>
                           </object>
                           <packing>
                             <property name="expand">False</property>
@@ -2014,6 +2018,7 @@
                             <property name="text" translatable="yes">0.000</property>
                             <property name="adjustment">_pointLightPositionX</property>
                             <property name="digits">3</property>
+                            <property name="value">2</property>
                           </object>
                           <packing>
                             <property name="expand">False</property>
@@ -2293,6 +2298,46 @@
                 <property name="fill">True</property>
                 <property name="pack_type">end</property>
                 <property name="position">6</property>
+              </packing>
+            </child>
+            <child>
+              <object class="GtkBox">
+                <property name="visible">True</property>
+                <property name="can_focus">False</property>
+                <child>
+                  <object class="GtkLabel">
+                    <property name="visible">True</property>
+                    <property name="can_focus">False</property>
+                    <property name="label" translatable="yes">Модель затенения</property>
+                  </object>
+                  <packing>
+                    <property name="expand">False</property>
+                    <property name="fill">True</property>
+                    <property name="position">0</property>
+                  </packing>
+                </child>
+                <child>
+                  <object class="GtkComboBoxText" id="_lightingModel">
+                    <property name="visible">True</property>
+                    <property name="can_focus">False</property>
+                    <property name="active">0</property>
+                    <property name="active_id">1</property>
+                    <items>
+                      <item id="1" translatable="yes">Плоская</item>
+                      <item id="2" translatable="yes">Гуро</item>
+                    </items>
+                  </object>
+                  <packing>
+                    <property name="expand">False</property>
+                    <property name="fill">True</property>
+                    <property name="position">1</property>
+                  </packing>
+                </child>
+              </object>
+              <packing>
+                <property name="expand">False</property>
+                <property name="fill">True</property>
+                <property name="position">7</property>
               </packing>
             </child>
           </object>

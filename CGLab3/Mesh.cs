@@ -62,20 +62,31 @@ namespace CG
         
             return new Vector4(0, 0, 0, 0);
         }
+
+        public Vector4 CalculatePosition()
+        {
+            Vector4 result = new Vector4(0, 0, 0, 0);
+            for (int i = 0; i < Vertexes.Count; ++i)
+            {
+                result += (1 / (float)Vertexes.Count) * Vertexes[i].Point;
+            }
+
+            return result;
+        } 
     }
 
     public class Mesh
     {
         public List<Vertex> Vertices;
         public List<Vertex> TransformedVertices;
-        public List<Polygon> Polygons;
-        public List<Polygon> TransformedPolygons;
+        // public List<Polygon> Polygons;
+        public List<Polygon> TransformedPolygons; //связывают преобразованные вершины
 
         public Mesh()
         {
             Vertices = new List<Vertex>();
             TransformedVertices = new List<Vertex>();
-            Polygons = new List<Polygon>();
+            // Polygons = new List<Polygon>();
             TransformedPolygons = new List<Polygon>();
         }
 
@@ -83,8 +94,8 @@ namespace CG
         {
             Vertices = vertices;
             TransformedVertices = new List<Vertex>(Vertices.Count);
-            Polygons = polygons;
-            TransformedPolygons = new List<Polygon>(Polygons.Count);
+            // Polygons = polygons;
+            // TransformedPolygons = new List<Polygon>(Polygons.Count);
         }
         
         public Mesh(List<Vertex> vertices, List<List<int>> polygons)
@@ -96,7 +107,7 @@ namespace CG
                 TransformedVertices.Add(new Vertex(0, 0, 0));
             }
             
-            Polygons = new List<Polygon>();
+            // Polygons = new List<Polygon>();
             TransformedPolygons = new List<Polygon>();
             
             foreach (var polygon in polygons)
@@ -108,7 +119,7 @@ namespace CG
                     polygonVertices.Add(vertices[vertexIndex]);
                     transformedPolygonVertices.Add(TransformedVertices[vertexIndex]);
                 }
-                Polygons.Add(new Polygon(polygonVertices));
+                // Polygons.Add(new Polygon(polygonVertices));
                 TransformedPolygons.Add(new Polygon(transformedPolygonVertices));
             }
         }
@@ -118,6 +129,22 @@ namespace CG
             for (int i = 0; i < Vertices.Count(); ++i)
             {
                 TransformedVertices[i].Point = Vector4.Transform(Vertices[i].Point, transformationMatrix);
+            }
+        }
+
+        public void SetColor(Vector3 color)
+        {
+            for (int i = 0; i < TransformedPolygons.Count; ++i)
+            {
+                TransformedPolygons[i].Color = color;
+            }
+        }
+        
+        public void SetColor(float r, float g, float b)
+        {
+            for (int i = 0; i < TransformedPolygons.Count; ++i)
+            {
+                TransformedPolygons[i].Color = new Vector3(r, g, b);
             }
         }
     }

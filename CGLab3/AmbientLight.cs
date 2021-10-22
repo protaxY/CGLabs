@@ -6,7 +6,7 @@ namespace CG
     {
         public Vector3 Color;
 
-        AmbientLight(Vector3 color)
+        public AmbientLight(Vector3 color)
         {
             Color = color;
         }

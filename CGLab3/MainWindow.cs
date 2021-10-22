@@ -46,17 +46,17 @@ namespace CG
         [UI] private Adjustment _materialColorG = null;
         [UI] private Adjustment _materialColorB = null;
         
-        [UI] private Adjustment _I_aR = null;
-        [UI] private Adjustment _I_aG = null;
-        [UI] private Adjustment _I_aB = null;
+        [UI] private Adjustment _k_aR = null;
+        [UI] private Adjustment _k_aG = null;
+        [UI] private Adjustment _k_aB = null;
         
-        [UI] private Adjustment _I_dR = null;
-        [UI] private Adjustment _I_dG = null;
-        [UI] private Adjustment _I_dB = null;
+        [UI] private Adjustment _k_dR = null;
+        [UI] private Adjustment _k_dG = null;
+        [UI] private Adjustment _k_dB = null;
         
-        [UI] private Adjustment _I_sR = null;
-        [UI] private Adjustment _I_sG = null;
-        [UI] private Adjustment _I_sB = null;
+        [UI] private Adjustment _k_sR = null;
+        [UI] private Adjustment _k_sG = null;
+        [UI] private Adjustment _k_sB = null;
         
         [UI] private Adjustment _p = null;
 
@@ -96,7 +96,9 @@ namespace CG
         #endregion
         
         [UI] private ComboBoxText _projectionMode = null;
-
+        
+        [UI] private ComboBoxText _lightingModel = null;
+        
         private float _defaultScale = 200;
         private float _compressedScale = 1;
         private Matrix4x4 _defaultTransformationMatrix;
@@ -124,8 +126,15 @@ namespace CG
             Isometric
         }
 
-        private Mesh _figure = new Ellipsoid(1, 1, 1, 16, 8);
+        #region выстраиваивание сцены
 
+        private Mesh _figure = new Ellipsoid(1, 1, 1, 16, 8);
+        private AmbientLight _ambientLight = new AmbientLight(new Vector3(0.5f, 0.5f, 0.5f));
+        private PointLight _pointLight = new PointLight(2, 0, 0, 1, 1, 1);
+        // private Material _material = new Material();
+        
+        #endregion
+        
         public MainWindow() : this(new Builder("CGLab3.glade"))
         {
             _transformationMatrix = new Matrix4x4(
@@ -153,8 +162,10 @@ namespace CG
                 context.LineWidth = 2d;
                 
                 _figure.ApplyTransformation(_transformationMatrix * _defaultTransformationMatrix);
+                _pointLight.ApplyTransformation(_transformationMatrix * _defaultTransformationMatrix);
                 
                 DrawMesh(context, _figure);
+                DrawPointLight(context, _pointLight);
 
                 if (_allowNormals.Active)
                 {
@@ -226,13 +237,61 @@ namespace CG
                     (float)_b.Value, (float)_c.Value, 
                     (int)_meridiansCount.Value, 
                     (int)_parallelsCount.Value); 
-                _canvas.QueueDraw();};
+                    _canvas.QueueDraw();};
             _parallelsCount.ValueChanged += (o, args) => { _figure = new Ellipsoid((float)_a.Value, 
                     (float)_b.Value, (float)_c.Value, 
                     (int)_meridiansCount.Value, 
                     (int)_parallelsCount.Value); 
-                _canvas.QueueDraw();};
+                    _canvas.QueueDraw();};
 
+            _materialColorR.ValueChanged += (o, args) => {_figure.SetColor((float)_materialColorR.Value, 
+                                                                                 (float)_materialColorG.Value, 
+                                                                                 (float)_materialColorB.Value); 
+                                                                _canvas.QueueDraw();};
+            _materialColorG.ValueChanged += (o, args) => {_figure.SetColor((float)_materialColorR.Value, 
+                                                                                 (float)_materialColorG.Value, 
+                                                                                 (float)_materialColorB.Value); 
+                                                                _canvas.QueueDraw();};
+            _materialColorB.ValueChanged += (o, args) => {_figure.SetColor((float)_materialColorR.Value, 
+                                                                                 (float)_materialColorG.Value, 
+                                                                                 (float)_materialColorB.Value); 
+                                                                _canvas.QueueDraw();};
+            
+            _k_aR.ValueChanged += (o, args) => {_canvas.QueueDraw();};
+            _k_aG.ValueChanged += (o, args) => {_canvas.QueueDraw();};
+            _k_aB.ValueChanged += (o, args) => {_canvas.QueueDraw();};
+            
+            _k_dR.ValueChanged += (o, args) => {_canvas.QueueDraw();};
+            _k_dG.ValueChanged += (o, args) => {_canvas.QueueDraw();};
+            _k_dB.ValueChanged += (o, args) => {_canvas.QueueDraw();};
+            
+            _k_sR.ValueChanged += (o, args) => {_canvas.QueueDraw();};
+            _k_sG.ValueChanged += (o, args) => {_canvas.QueueDraw();};
+            _k_sB.ValueChanged += (o, args) => {_canvas.QueueDraw();};
+            
+            _p.ValueChanged += (o, args) => {_canvas.QueueDraw();};
+            
+            _ambientLightColorR.ValueChanged += (o, args) => {_ambientLight.Color.X = (float)_ambientLightColorR.Value; 
+                                                                    _canvas.QueueDraw();};
+            _ambientLightColorG.ValueChanged += (o, args) => {_ambientLight.Color.Y = (float)_ambientLightColorG.Value; 
+                                                                    _canvas.QueueDraw();};
+            _ambientLightColorB.ValueChanged += (o, args) => {_ambientLight.Color.Z = (float)_ambientLightColorB.Value; 
+                                                                    _canvas.QueueDraw();};
+            
+            _pointLightIntensityR.ValueChanged += (o, args) => {_pointLight.Intensity.X = (float)_pointLightIntensityR.Value; 
+                                                                      _canvas.QueueDraw();};
+            _pointLightIntensityG.ValueChanged += (o, args) => {_pointLight.Intensity.Y = (float)_pointLightIntensityG.Value; 
+                                                                      _canvas.QueueDraw();};
+            _pointLightIntensityB.ValueChanged += (o, args) => {_pointLight.Intensity.Z = (float)_pointLightIntensityB.Value; 
+                                                                      _canvas.QueueDraw();};
+            
+            _pointLightPositionX.ValueChanged += (o, args) => {_pointLight.Position.X = (float)_pointLightPositionX.Value; 
+                                                                     _canvas.QueueDraw();};
+            _pointLightPositionY.ValueChanged += (o, args) => {_pointLight.Position.Y = (float)_pointLightPositionY.Value; 
+                                                                     _canvas.QueueDraw();};
+            _pointLightPositionZ.ValueChanged += (o, args) => {_pointLight.Position.Z = (float)_pointLightPositionZ.Value; 
+                                                                     _canvas.QueueDraw();};
+            
             #endregion
 
             #region Обработка матрицы
@@ -343,12 +402,41 @@ namespace CG
             
             if (_allowWireframe.Active == false)
             {
-                context.SetSourceRGB(color.X, color.Y, color.Z);
-                context.FillPreserve();
+                //фоновая составляющая
+                Vector3 I_a = _ambientLight.Color;
+                
+                //рассеяная составляющая
+                Vector4 L = _pointLight.TransformedPosition - polygon.CalculatePosition();
+                L /= L.Length();
+                Vector4 N = polygon.CalculateNormal();
+                float cosLN = Math.Max(0, (float)(Vector4.Dot(L, N) / (L.Length() * N.Length())));
+                Vector3 I_d = new Vector3((float)(_k_dR.Value * _pointLightIntensityR.Value * cosLN), 
+                                          (float)(_k_dG.Value * _pointLightIntensityG.Value * cosLN), 
+                                          (float)(_k_dB.Value * _pointLightIntensityB.Value * cosLN));
+                
+                //отражающая составляющая
+                Vector4 R = L + 2 * ((cosLN * N) - L); //отраженный от порехности вектор
+                Matrix4x4 _invertedTransformationMatrix;
+                Matrix4x4.Invert(_transformationMatrix, out _invertedTransformationMatrix);
+                
+                Vector4 S = Vector4.Transform(new Vector4(0, 0, -1, 1), _invertedTransformationMatrix);
+                
+                float cosRSp = (float)Math.Pow(Math.Max(0, (float)(Vector4.Dot(R, S) / (R.Length() * S.Length()))), _p.Value);
+                Vector3 I_s = new Vector3((float)(_k_sR.Value * _pointLightIntensityR.Value * cosRSp), 
+                                          (float)(_k_sG.Value * _pointLightIntensityG.Value * cosRSp), 
+                                          (float)(_k_sB.Value * _pointLightIntensityB.Value * cosRSp));
+
+                Vector3 polygonTrueColor = (I_a + I_d + I_s) * polygon.Color;
+                
+                context.SetSourceRGB(polygonTrueColor.X,
+                                     polygonTrueColor.Y,
+                                     polygonTrueColor.Z);
+                
+                context.Fill();
             }
             
-            context.SetSourceRGB(.5, 1, .5);
-            context.Stroke();
+            // context.SetSourceRGB(.5, 1, .5);
+            // context.Stroke();
         }
 
         private void DrawMesh(Context context, Mesh mesh)
@@ -414,6 +502,22 @@ namespace CG
             context.LineTo(z.X, z.Y);
             context.SetSourceRGB(.0, .0, 1);
             context.Stroke();
+        }
+
+        private void DrawPointLight(Context context, PointLight pointLight)
+        {
+            Cairo.Gradient radpat = new RadialGradient(pointLight.TransformedPosition.X, 
+                                                       pointLight.TransformedPosition.Y, 
+                                                       0, 
+                                                       pointLight.TransformedPosition.X, 
+                                                       pointLight.TransformedPosition.Y, 50);
+            radpat.AddColorStop(0, new Cairo.Color(1, 1, 1, 1));
+            radpat.AddColorStop(1, new Cairo.Color(0, 0, 0, 0));
+
+
+            context.Rectangle(0, 0, Window.Width, Window.Height);
+            context.Source = radpat;
+            context.Fill();
         }
         
         #endregion
