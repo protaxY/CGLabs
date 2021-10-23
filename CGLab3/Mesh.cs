@@ -44,17 +44,18 @@ namespace CG
             Vertexes = vertexes;
         }
         
-        private Vector3 toVector3(Vertex vertex)
+        public static Vector3 ToVector3(Vertex vertex)
         { 
             return new Vector3(vertex.Point.X, vertex.Point.Y, vertex.Point.Z);
-        }   
-
-        public Vector4 CalculateNormal()
+        }
+        
+        public Vector4 CalculatedNormal()
         {
+            // так как у мэша есть только полигоны преобразованных вершин, то номали высчитывыаются от них
             if (Vertexes.Count() >= 3)
             {
-                Vector3 a = toVector3(Vertexes[1]) - toVector3(Vertexes[0]);
-                Vector3 b = toVector3(Vertexes[2]) - toVector3(Vertexes[0]);
+                Vector3 a = ToVector3(Vertexes[1]) - ToVector3(Vertexes[0]);
+                Vector3 b = ToVector3(Vertexes[2]) - ToVector3(Vertexes[0]);
                 Vector3 normal = Vector3.Cross(b, a);
                 normal = normal / normal.Length();
                 return new Vector4(normal.X, normal.Y, normal.Z, 0);
@@ -79,14 +80,14 @@ namespace CG
     {
         public List<Vertex> Vertices;
         public List<Vertex> TransformedVertices;
-        // public List<Polygon> Polygons;
+        public List<Polygon> Polygons;
         public List<Polygon> TransformedPolygons; //связывают преобразованные вершины
 
         public Mesh()
         {
             Vertices = new List<Vertex>();
             TransformedVertices = new List<Vertex>();
-            // Polygons = new List<Polygon>();
+            Polygons = new List<Polygon>();
             TransformedPolygons = new List<Polygon>();
         }
 
@@ -94,8 +95,8 @@ namespace CG
         {
             Vertices = vertices;
             TransformedVertices = new List<Vertex>(Vertices.Count);
-            // Polygons = polygons;
-            // TransformedPolygons = new List<Polygon>(Polygons.Count);
+            Polygons = polygons;
+            TransformedPolygons = new List<Polygon>(Polygons.Count);
         }
         
         public Mesh(List<Vertex> vertices, List<List<int>> polygons)
@@ -107,7 +108,7 @@ namespace CG
                 TransformedVertices.Add(new Vertex(0, 0, 0));
             }
             
-            // Polygons = new List<Polygon>();
+            Polygons = new List<Polygon>();
             TransformedPolygons = new List<Polygon>();
             
             foreach (var polygon in polygons)
@@ -119,7 +120,7 @@ namespace CG
                     polygonVertices.Add(vertices[vertexIndex]);
                     transformedPolygonVertices.Add(TransformedVertices[vertexIndex]);
                 }
-                // Polygons.Add(new Polygon(polygonVertices));
+                Polygons.Add(new Polygon(polygonVertices));
                 TransformedPolygons.Add(new Polygon(transformedPolygonVertices));
             }
         }

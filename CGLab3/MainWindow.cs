@@ -391,7 +391,7 @@ namespace CG
         {
             if (polygon.Vertexes.Count == 0)
                 return;
-            if (_allowInvisPoly.Active && polygon.CalculateNormal().Z < 0)
+            if (_allowInvisPoly.Active && polygon.CalculatedNormal().Z < 0)
                 return;
 
             context.MoveTo(polygon.Vertexes[0].Point.X, polygon.Vertexes[0].Point.Y);
@@ -417,7 +417,7 @@ namespace CG
                 //рассеяная составляющая
                 Vector4 L = _pointLight.TransformedPosition - polygon.CalculateCenter();
                 L /= L.Length();
-                Vector4 N = polygon.CalculateNormal();
+                Vector4 N = polygon.CalculatedNormal();
                 float cosLN = Math.Max(0, (float)(Vector4.Dot(L, N) / (L.Length() * N.Length())));
                 Vector3 I_d = new Vector3((float)(_k_dR.Value * _pointLightIntensityR.Value * cosLN), 
                     (float)(_k_dG.Value * _pointLightIntensityG.Value * cosLN), 
@@ -447,7 +447,6 @@ namespace CG
                 
                 context.Fill();
             }
-
         }
 
         private void DrawMesh(Context context, Mesh mesh)
@@ -465,12 +464,14 @@ namespace CG
 
         private void DrawNormal(Context context, Polygon polygon)
         {
-            if (_allowInvisPoly.Active && polygon.CalculateNormal().Z < 0)
+            Vector4 normal = Vector4.Transform(polygon.CalculatedNormal(), _transformationMatrix * _defaultTransformationMatrix);
+            normal /= normal.Length();
+            normal *= 50;
+            
+            if (_allowInvisPoly.Active && normal.Z < 0)
                 return;
             
-            Vector4 normal = polygon.CalculateNormal();
-            normal *= 100;
-            Vector4 polygonCenter = polygon.CalculateCenter();
+            Vector4 polygonCenter = Vector4.Transform(polygon.CalculateCenter(), _transformationMatrix * _defaultTransformationMatrix);
             
             context.MoveTo(polygonCenter.X, polygonCenter.Y);
             context.LineTo(polygonCenter.X + normal.X, polygonCenter.Y + normal.Y);
@@ -478,30 +479,32 @@ namespace CG
             context.SetSourceRGB(0, 1, 1);
             context.Stroke();
 
-            #region отладочная отрисовка для отраженной составляющей
-
-            Vector4 L = _pointLight.TransformedPosition - polygon.CalculateCenter();
-            L /= L.Length();
-            Vector4 N = polygon.CalculateNormal();
-            float cosLN = Math.Max(0, (float)(Vector4.Dot(L, N) / (L.Length() * N.Length())));
-            Vector4 R = ((cosLN * N) - L) + N * cosLN;
-            R *= 100;
-            
-            context.MoveTo(polygonCenter.X, polygonCenter.Y);
-            context.LineTo(polygonCenter.X + R.X, polygonCenter.Y + R.Y);
-            
-            context.SetSourceRGB(0, 1, 0);
-            context.Stroke();
-            
-            Matrix4x4 _invertedTransformationMatrix;
-            Matrix4x4.Invert(_transformationMatrix, out _invertedTransformationMatrix);
-
-            #endregion
+            // #region отладочная отрисовка для отраженной составляющей
+            //
+            // Vector4 L = _pointLight.TransformedPosition - polygon.CalculateCenter();
+            // L /= L.Length();
+            // Vector4 N = polygon.CalculateNormal();
+            // float cosLN = Math.Max(0, (float)(Vector4.Dot(L, N) / (L.Length() * N.Length())));
+            // Vector4 R = ((cosLN * N) - L) + N * cosLN;
+            // R *= 100;
+            //
+            // context.MoveTo(polygonCenter.X, polygonCenter.Y);
+            // context.LineTo(polygonCenter.X + R.X, polygonCenter.Y + R.Y);
+            //
+            // context.SetSourceRGB(0, 1, 0);
+            // context.Stroke();
+            //
+            // Matrix4x4 _invertedTransformationMatrix;
+            // Matrix4x4.Invert(_transformationMatrix, out _invertedTransformationMatrix);
+            //
+            // #endregion
         }
         
         private void DrawNormals(Context context, Mesh mesh)
         {
-            foreach (var polygon in mesh.TransformedPolygons)
+            // чтобы не возникало бага с отрисовкой, когда полигон схлопнут,
+            // нормали вычисляются в мировой системе координат
+            foreach (var polygon in mesh.Polygons)
             {
                 DrawNormal(context, polygon);
             }

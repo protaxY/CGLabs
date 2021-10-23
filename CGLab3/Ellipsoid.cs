@@ -27,10 +27,10 @@ namespace CG
 
             for (int i = 1; i < meridiansCount; ++i)
             {
-                // Polygons.Add(new Polygon(new List<Vertex>{Vertices[0], Vertices[i + 1], Vertices[i]}));
+                Polygons.Add(new Polygon(new List<Vertex>{Vertices[0], Vertices[i + 1], Vertices[i]}));
                 TransformedPolygons.Add(new Polygon(new List<Vertex>{TransformedVertices[0], TransformedVertices[i + 1], TransformedVertices[i]}));
             }
-            // Polygons.Add(new Polygon(new List<Vertex>{Vertices[0], Vertices[1], Vertices[meridiansCount]}));
+            Polygons.Add(new Polygon(new List<Vertex>{Vertices[0], Vertices[1], Vertices[meridiansCount]}));
             TransformedPolygons.Add(new Polygon(new List<Vertex>{TransformedVertices[0], TransformedVertices[1], TransformedVertices[meridiansCount]}));
             
             for (int i = 0; i < parallelsCount - 1; ++i)
@@ -38,19 +38,19 @@ namespace CG
                 int shiftOnParralel = 1 + i * meridiansCount;
                 for (int j = 0; j < meridiansCount - 1; ++j)
                 {
-                    // Polygons.Add(new Polygon(new List<Vertex>{Vertices[shiftOnParralel + j], 
-                    //     Vertices[shiftOnParralel + j + 1], 
-                    //     Vertices[shiftOnParralel + meridiansCount + j + 1], 
-                    //     Vertices[shiftOnParralel + meridiansCount + j]}));
+                    Polygons.Add(new Polygon(new List<Vertex>{Vertices[shiftOnParralel + j], 
+                        Vertices[shiftOnParralel + j + 1], 
+                        Vertices[shiftOnParralel + meridiansCount + j + 1], 
+                        Vertices[shiftOnParralel + meridiansCount + j]}));
                     TransformedPolygons.Add(new Polygon(new List<Vertex>{TransformedVertices[shiftOnParralel + j], 
                         TransformedVertices[shiftOnParralel + j + 1], 
                         TransformedVertices[shiftOnParralel + meridiansCount + j + 1], 
                         TransformedVertices[shiftOnParralel + meridiansCount + j]}));
                 }
-                // Polygons.Add(new Polygon(new List<Vertex>{Vertices[shiftOnParralel + meridiansCount - 1], 
-                //     Vertices[shiftOnParralel], 
-                //     Vertices[shiftOnParralel + meridiansCount], 
-                //     Vertices[shiftOnParralel + meridiansCount + meridiansCount - 1]}));
+                Polygons.Add(new Polygon(new List<Vertex>{Vertices[shiftOnParralel + meridiansCount - 1], 
+                Vertices[shiftOnParralel], 
+                Vertices[shiftOnParralel + meridiansCount], 
+                Vertices[shiftOnParralel + meridiansCount + meridiansCount - 1]}));
                 TransformedPolygons.Add(new Polygon(new List<Vertex>{TransformedVertices[shiftOnParralel + meridiansCount - 1], 
                     TransformedVertices[shiftOnParralel], 
                     TransformedVertices[shiftOnParralel + meridiansCount], 
@@ -59,10 +59,10 @@ namespace CG
             
             for (int i = Vertices.Count - meridiansCount - 1; i < Vertices.Count - 2; ++i)
             {
-                // Polygons.Add(new Polygon(new List<Vertex>{Vertices[Vertices.Count - 1], Vertices[i], Vertices[i + 1]}));
+                Polygons.Add(new Polygon(new List<Vertex>{Vertices[Vertices.Count - 1], Vertices[i], Vertices[i + 1]}));
                 TransformedPolygons.Add(new Polygon(new List<Vertex>{TransformedVertices[Vertices.Count - 1], TransformedVertices[i], TransformedVertices[i + 1]}));
             }
-            // Polygons.Add(new Polygon(new List<Vertex>{Vertices[Vertices.Count - 1], Vertices[Vertices.Count - 2], Vertices[Vertices.Count - meridiansCount - 1]}));
+            Polygons.Add(new Polygon(new List<Vertex>{Vertices[Vertices.Count - 1], Vertices[Vertices.Count - 2], Vertices[Vertices.Count - meridiansCount - 1]}));
             TransformedPolygons.Add(new Polygon(new List<Vertex>{TransformedVertices[Vertices.Count - 1], TransformedVertices[Vertices.Count - 2], TransformedVertices[Vertices.Count - meridiansCount - 1]}));
         }
     }
