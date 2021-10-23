@@ -5,36 +5,39 @@
   <object class="GtkAdjustment" id="_a">
     <property name="lower">-100</property>
     <property name="upper">100</property>
+    <property name="value">1</property>
     <property name="step_increment">0.10000000000000001</property>
     <property name="page_increment">0.10000000000000001</property>
   </object>
   <object class="GtkAdjustment" id="_ambientLightColorB">
-    <property name="upper">100</property>
-    <property name="value">0.10000000000000001</property>
-    <property name="step_increment">1</property>
+    <property name="upper">1</property>
+    <property name="value">0.29999999999999999</property>
+    <property name="step_increment">0.10000000000000001</property>
     <property name="page_increment">10</property>
   </object>
   <object class="GtkAdjustment" id="_ambientLightColorG">
-    <property name="upper">100</property>
-    <property name="value">0.10000000000000001</property>
-    <property name="step_increment">1</property>
+    <property name="upper">1</property>
+    <property name="value">0.02</property>
+    <property name="step_increment">0.10000000000000001</property>
     <property name="page_increment">10</property>
   </object>
   <object class="GtkAdjustment" id="_ambientLightColorR">
-    <property name="upper">100</property>
+    <property name="upper">1</property>
     <property name="value">0.10000000000000001</property>
-    <property name="step_increment">1</property>
+    <property name="step_increment">0.10000000000000001</property>
     <property name="page_increment">10</property>
   </object>
   <object class="GtkAdjustment" id="_b">
     <property name="lower">-100</property>
     <property name="upper">100</property>
+    <property name="value">1</property>
     <property name="step_increment">0.10000000000000001</property>
     <property name="page_increment">0.10000000000000001</property>
   </object>
   <object class="GtkAdjustment" id="_c">
     <property name="lower">-100</property>
     <property name="upper">100</property>
+    <property name="value">1</property>
     <property name="step_increment">0.10000000000000001</property>
     <property name="page_increment">0.10000000000000001</property>
   </object>
@@ -204,7 +207,7 @@
   <object class="GtkAdjustment" id="_meridiansCount">
     <property name="lower">3</property>
     <property name="upper">1000000</property>
-    <property name="value">16</property>
+    <property name="value">50</property>
     <property name="step_increment">1</property>
     <property name="page_increment">1</property>
   </object>
@@ -216,7 +219,7 @@
   <object class="GtkAdjustment" id="_parallelsCount">
     <property name="lower">1</property>
     <property name="upper">1000000</property>
-    <property name="value">8</property>
+    <property name="value">25</property>
     <property name="step_increment">1</property>
     <property name="page_increment">1</property>
   </object>
@@ -860,7 +863,7 @@
                                 <property name="width_chars">6</property>
                                 <property name="text" translatable="yes">1.000</property>
                                 <property name="adjustment">_parallelsCount</property>
-                                <property name="value">8</property>
+                                <property name="value">25</property>
                               </object>
                               <packing>
                                 <property name="expand">False</property>
@@ -889,7 +892,7 @@
                                 <property name="width_chars">6</property>
                                 <property name="text" translatable="yes">1.000</property>
                                 <property name="adjustment">_meridiansCount</property>
-                                <property name="value">16</property>
+                                <property name="value">50</property>
                               </object>
                               <packing>
                                 <property name="expand">False</property>
@@ -1709,7 +1712,7 @@
                             <property name="text" translatable="yes">1.000</property>
                             <property name="adjustment">_ambientLightColorB</property>
                             <property name="digits">3</property>
-                            <property name="value">0.10000000000000001</property>
+                            <property name="value">0.29999999999999999</property>
                           </object>
                           <packing>
                             <property name="expand">False</property>
@@ -1739,7 +1742,7 @@
                             <property name="text" translatable="yes">1.000</property>
                             <property name="adjustment">_ambientLightColorG</property>
                             <property name="digits">3</property>
-                            <property name="value">0.10000000000000001</property>
+                            <property name="value">0.02</property>
                           </object>
                           <packing>
                             <property name="expand">False</property>
@@ -1769,7 +1772,7 @@
                             <property name="text" translatable="yes">1.000</property>
                             <property name="adjustment">_ambientLightColorR</property>
                             <property name="digits">3</property>
-                            <property name="value">0.10000000000000001</property>
+                            <property name="value">0.02</property>
                           </object>
                           <packing>
                             <property name="expand">False</property>
@@ -1823,6 +1826,44 @@
                     <property name="visible">True</property>
                     <property name="can_focus">False</property>
                     <property name="orientation">vertical</property>
+                    <child>
+                      <object class="GtkBox" id="scale10">
+                        <property name="visible">True</property>
+                        <property name="can_focus">False</property>
+                        <child>
+                          <object class="GtkLabel">
+                            <property name="visible">True</property>
+                            <property name="can_focus">False</property>
+                            <property name="label" translatable="yes">Показать источник</property>
+                          </object>
+                          <packing>
+                            <property name="expand">False</property>
+                            <property name="fill">True</property>
+                            <property name="position">0</property>
+                          </packing>
+                        </child>
+                        <child>
+                          <object class="GtkCheckButton" id="_allowPointLightVisible">
+                            <property name="visible">True</property>
+                            <property name="can_focus">True</property>
+                            <property name="receives_default">False</property>
+                            <property name="active">True</property>
+                            <property name="draw_indicator">True</property>
+                          </object>
+                          <packing>
+                            <property name="expand">False</property>
+                            <property name="fill">True</property>
+                            <property name="pack_type">end</property>
+                            <property name="position">1</property>
+                          </packing>
+                        </child>
+                      </object>
+                      <packing>
+                        <property name="expand">False</property>
+                        <property name="fill">True</property>
+                        <property name="position">0</property>
+                      </packing>
+                    </child>
                     <child>
                       <object class="GtkBox" id="scale7">
                         <property name="visible">True</property>
@@ -1933,7 +1974,7 @@
                       <packing>
                         <property name="expand">False</property>
                         <property name="fill">True</property>
-                        <property name="position">0</property>
+                        <property name="position">1</property>
                       </packing>
                     </child>
                     <child>
@@ -2044,7 +2085,7 @@
                       <packing>
                         <property name="expand">False</property>
                         <property name="fill">False</property>
-                        <property name="position">1</property>
+                        <property name="position">2</property>
                       </packing>
                     </child>
                   </object>

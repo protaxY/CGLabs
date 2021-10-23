@@ -64,6 +64,8 @@ namespace CG
         [UI] private Adjustment _ambientLightColorG = null;
         [UI] private Adjustment _ambientLightColorB = null;
         
+        [UI] private CheckButton _allowPointLightVisible = null;
+            
         [UI] private Adjustment _pointLightIntensityR = null;
         [UI] private Adjustment _pointLightIntensityG = null;
         [UI] private Adjustment _pointLightIntensityB = null;
@@ -128,10 +130,8 @@ namespace CG
 
         #region выстраиваивание сцены
 
-        private Mesh _figure = new Ellipsoid(1, 1, 1, 16, 8);
-        private AmbientLight _ambientLight = new AmbientLight(new Vector3(0.5f, 0.5f, 0.5f));
+        private Mesh _figure = new Ellipsoid(1, 1, 1, 50, 25);
         private PointLight _pointLight = new PointLight(2, 0, 0, 1, 1, 1);
-        // private Material _material = new Material();
         
         #endregion
         
@@ -158,14 +158,17 @@ namespace CG
                 context.SetSourceRGB(0, 0, 0);
                 context.Paint();
 
-                context.Antialias = Antialias.Subpixel;
+                // context.Antialias = Antialias.Subpixel; // убрал, чтобы не было зазоров между полигонами
                 context.LineWidth = 2d;
                 
                 _figure.ApplyTransformation(_transformationMatrix * _defaultTransformationMatrix);
                 _pointLight.ApplyTransformation(_transformationMatrix * _defaultTransformationMatrix);
                 
                 DrawMesh(context, _figure);
-                DrawPointLight(context, _pointLight);
+                if (_allowPointLightVisible.Active)
+                {
+                    DrawPointLight(context, _pointLight);
+                }
 
                 if (_allowNormals.Active)
                 {
@@ -271,13 +274,12 @@ namespace CG
             
             _p.ValueChanged += (o, args) => {_canvas.QueueDraw();};
             
-            _ambientLightColorR.ValueChanged += (o, args) => {_ambientLight.Color.X = (float)_ambientLightColorR.Value; 
-                                                                    _canvas.QueueDraw();};
-            _ambientLightColorG.ValueChanged += (o, args) => {_ambientLight.Color.Y = (float)_ambientLightColorG.Value; 
-                                                                    _canvas.QueueDraw();};
-            _ambientLightColorB.ValueChanged += (o, args) => {_ambientLight.Color.Z = (float)_ambientLightColorB.Value; 
-                                                                    _canvas.QueueDraw();};
-            
+            _ambientLightColorR.ValueChanged += (o, args) => {_canvas.QueueDraw();};
+            _ambientLightColorG.ValueChanged += (o, args) => {_canvas.QueueDraw();};
+            _ambientLightColorB.ValueChanged += (o, args) => {_canvas.QueueDraw();};
+
+            _allowPointLightVisible.Toggled += (o, args) => {_canvas.QueueDraw(); };
+
             _pointLightIntensityR.ValueChanged += (o, args) => {_pointLight.Intensity.X = (float)_pointLightIntensityR.Value; 
                                                                       _canvas.QueueDraw();};
             _pointLightIntensityG.ValueChanged += (o, args) => {_pointLight.Intensity.Y = (float)_pointLightIntensityG.Value; 
@@ -399,33 +401,44 @@ namespace CG
                 context.LineTo(polygon.Vertexes[i].Point.X, polygon.Vertexes[i].Point.Y);
             }
             context.ClosePath();
-            
-            if (_allowWireframe.Active == false)
+
+            if (_allowWireframe.Active)
+            {
+                context.SetSourceRGB(.5, 1, .5);
+                context.Stroke();
+            }
+            else
             {
                 //фоновая составляющая
-                Vector3 I_a = _ambientLight.Color;
+                Vector3 I_a = new Vector3((float)_ambientLightColorR.Value,
+                                          (float)_ambientLightColorG.Value,
+                                          (float)_ambientLightColorB.Value);
                 
                 //рассеяная составляющая
-                Vector4 L = _pointLight.TransformedPosition - polygon.CalculatePosition();
+                Vector4 L = _pointLight.TransformedPosition - polygon.CalculateCenter();
                 L /= L.Length();
                 Vector4 N = polygon.CalculateNormal();
                 float cosLN = Math.Max(0, (float)(Vector4.Dot(L, N) / (L.Length() * N.Length())));
                 Vector3 I_d = new Vector3((float)(_k_dR.Value * _pointLightIntensityR.Value * cosLN), 
-                                          (float)(_k_dG.Value * _pointLightIntensityG.Value * cosLN), 
-                                          (float)(_k_dB.Value * _pointLightIntensityB.Value * cosLN));
+                    (float)(_k_dG.Value * _pointLightIntensityG.Value * cosLN), 
+                    (float)(_k_dB.Value * _pointLightIntensityB.Value * cosLN));
                 
                 //отражающая составляющая
-                Vector4 R = L + 2 * ((cosLN * N) - L); //отраженный от порехности вектор
-                Matrix4x4 _invertedTransformationMatrix;
-                Matrix4x4.Invert(_transformationMatrix, out _invertedTransformationMatrix);
+                cosLN = (float)(Vector4.Dot(L, N) / (L.Length() * N.Length()));
+                Vector3 I_s;
+                if (cosLN > 0)
+                {
+                    //все происходит в базисе экрана!!!
+                    Vector4 R = ((cosLN * N) - L) + N * cosLN; //отраженный от порехности вектор
+                    Vector4 S = new Vector4(0, 0, 1, 0);
+                    
+                    float cosRSp = (float)Math.Pow(Math.Max(0, (float)(Vector4.Dot(R, S) / (R.Length() * S.Length()))), _p.Value);
+                    I_s = new Vector3((float)(_k_sR.Value * _pointLightIntensityR.Value * cosRSp), 
+                                      (float)(_k_sG.Value * _pointLightIntensityG.Value * cosRSp), 
+                                      (float)(_k_sB.Value * _pointLightIntensityB.Value * cosRSp));
+                }
+                else I_s = Vector3.Zero;
                 
-                Vector4 S = Vector4.Transform(new Vector4(0, 0, -1, 1), _invertedTransformationMatrix);
-                
-                float cosRSp = (float)Math.Pow(Math.Max(0, (float)(Vector4.Dot(R, S) / (R.Length() * S.Length()))), _p.Value);
-                Vector3 I_s = new Vector3((float)(_k_sR.Value * _pointLightIntensityR.Value * cosRSp), 
-                                          (float)(_k_sG.Value * _pointLightIntensityG.Value * cosRSp), 
-                                          (float)(_k_sB.Value * _pointLightIntensityB.Value * cosRSp));
-
                 Vector3 polygonTrueColor = (I_a + I_d + I_s) * polygon.Color;
                 
                 context.SetSourceRGB(polygonTrueColor.X,
@@ -434,9 +447,7 @@ namespace CG
                 
                 context.Fill();
             }
-            
-            // context.SetSourceRGB(.5, 1, .5);
-            // context.Stroke();
+
         }
 
         private void DrawMesh(Context context, Mesh mesh)
@@ -459,18 +470,33 @@ namespace CG
             
             Vector4 normal = polygon.CalculateNormal();
             normal *= 100;
-            Vector4 polygonCenter = new Vector4(0, 0, 0, 0);
-            for (int i = 0; i < polygon.Vertexes.Count; ++i)
-            {
-                polygonCenter += polygon.Vertexes[i].Point;
-            }
-            polygonCenter /= polygon.Vertexes.Count;
-
+            Vector4 polygonCenter = polygon.CalculateCenter();
+            
             context.MoveTo(polygonCenter.X, polygonCenter.Y);
             context.LineTo(polygonCenter.X + normal.X, polygonCenter.Y + normal.Y);
             
-            context.SetSourceRGB(.0, 1, 1);
+            context.SetSourceRGB(0, 1, 1);
             context.Stroke();
+
+            #region отладочная отрисовка для отраженной составляющей
+
+            Vector4 L = _pointLight.TransformedPosition - polygon.CalculateCenter();
+            L /= L.Length();
+            Vector4 N = polygon.CalculateNormal();
+            float cosLN = Math.Max(0, (float)(Vector4.Dot(L, N) / (L.Length() * N.Length())));
+            Vector4 R = ((cosLN * N) - L) + N * cosLN;
+            R *= 100;
+            
+            context.MoveTo(polygonCenter.X, polygonCenter.Y);
+            context.LineTo(polygonCenter.X + R.X, polygonCenter.Y + R.Y);
+            
+            context.SetSourceRGB(0, 1, 0);
+            context.Stroke();
+            
+            Matrix4x4 _invertedTransformationMatrix;
+            Matrix4x4.Invert(_transformationMatrix, out _invertedTransformationMatrix);
+
+            #endregion
         }
         
         private void DrawNormals(Context context, Mesh mesh)
@@ -551,6 +577,13 @@ namespace CG
             _m44.Value = _transformationMatrix.M44;
             
             #endregion
+        }
+        
+        private static void MatrixToAngles(Matrix4x4 matrix, out double x, out double y, out double z)
+        {
+            x = Math.Atan2(matrix.M23, matrix.M33) / Math.PI * 180;
+            y = Math.Atan2(-matrix.M13, Math.Sqrt(1 - matrix.M13 * matrix.M13)) / Math.PI * 180;
+            z = Math.Atan2(matrix.M12, matrix.M11) / Math.PI * 180;
         }
 
         private void CalculateAxisTransformationMatrix()

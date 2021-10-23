@@ -63,7 +63,7 @@ namespace CG
             return new Vector4(0, 0, 0, 0);
         }
 
-        public Vector4 CalculatePosition()
+        public Vector4 CalculateCenter()
         {
             Vector4 result = new Vector4(0, 0, 0, 0);
             for (int i = 0; i < Vertexes.Count; ++i)
