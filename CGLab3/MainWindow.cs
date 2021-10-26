@@ -116,8 +116,8 @@ namespace CG
         private uint _mousePressedButton = 0;
 
         #endregion
-
-        private Vector3 _darkBlue = new Vector3(0, (float)0.2, (float)0.4);
+        
+        private CairoSurface _surface;
         
         private enum Projection
         {
@@ -128,7 +128,7 @@ namespace CG
             Isometric
         }
         
-        private enum LightningModel
+        private enum Shading
         {
             Flat,
             Gouraud
@@ -148,8 +148,9 @@ namespace CG
                 0, 1, 0, 0,
                 0, 0, 1, 0,
                 0, 0, 0, 1);
-
             CalculateTranformationMatrix();
+
+            _figure.TriangulateSquares();
         }
 
         private MainWindow(Builder builder) : base(builder.GetRawOwnedObject("MainWindow"))
@@ -157,6 +158,8 @@ namespace CG
             builder.Autoconnect(this);
             DeleteEvent += (o, args) => Application.Quit();
 
+            _surface = new CairoSurface(_canvas);
+            
             _canvas.Drawn += (o, args) =>
             {
                 var context = args.Cr;
@@ -300,6 +303,8 @@ namespace CG
             _pointLightPositionZ.ValueChanged += (o, args) => {_pointLight.Position.Z = (float)_pointLightPositionZ.Value; 
                                                                      _canvas.QueueDraw();};
             
+            _lightingModel.Changed += (o, args) => {_canvas.QueueDraw(); };
+            
             #endregion
 
             #region Обработка матрицы
@@ -346,22 +351,61 @@ namespace CG
                 }
                 if (_mousePressedButton == 3)
                 {
-                    if (_xRotation.Value + _currentMousePosition.Y - _mousePosition.Y < 0)
-                        _xRotation.Value += 360 + _currentMousePosition.Y - _mousePosition.Y;
-                    else if (_xRotation.Value + _currentMousePosition.Y - _mousePosition.Y > 360)
-                        _xRotation.Value += -360 + _currentMousePosition.Y - _mousePosition.Y;
-                    else
-                        _xRotation.Value += _currentMousePosition.Y - _mousePosition.Y;
+                    // Vector4 mouseShift = new Vector4((float)(_mousePosition.X - _currentMousePosition.X),
+                    //                                  (float)(_mousePosition.Y - _currentMousePosition.Y),
+                    //                                  0f,
+                    //                                  0f);
+                    //
+                    // Matrix4x4 inverseMatrix = new Matrix4x4();
+                    // Matrix4x4.Invert(_transformationMatrix * _defaultTransformationMatrix, out inverseMatrix);
+                    // mouseShift = Vector4.Transform(mouseShift, inverseMatrix);
+                    // mouseShift *= 100;
+                    //
+                    // if (_xRotation.Value + (int)mouseShift.X < 0)
+                    //     _xRotation.Value += 360 + (int)mouseShift.X;
+                    // else if (_xRotation.Value + (int)mouseShift.X > 360)
+                    //     _xRotation.Value += -360 + (int)mouseShift.X;
+                    // else
+                    //     _xRotation.Value += (int)mouseShift.X;
+                    //
+                    // if (_yRotation.Value + (int)mouseShift.Y < 0)
+                    //     _yRotation.Value += 360 + (int)mouseShift.Y;
+                    // else if (_yRotation.Value + (int)mouseShift.Y > 360)
+                    //     _yRotation.Value += -360 + (int)mouseShift.Y;
+                    // else
+                    //     _yRotation.Value += (int)mouseShift.Y;
+                    //
+                    // if (_yRotation.Value + (int)mouseShift.Z < 0)
+                    //     _yRotation.Value += 360 + (int)mouseShift.Z;
+                    // else if (_yRotation.Value + (int)mouseShift.Z > 360)
+                    //     _yRotation.Value += -360 + (int)mouseShift.Z;
+                    // else
+                    //     _yRotation.Value += (int)mouseShift.Z;
                     
-                    if (_yRotation.Value + _currentMousePosition.X - _mousePosition.X < 0)
-                        _yRotation.Value += 360 + _currentMousePosition.X - _mousePosition.X;
-                    else if (_yRotation.Value + _currentMousePosition.X - _mousePosition.X > 360)
-                        _yRotation.Value += -360 + _currentMousePosition.X - _mousePosition.X;
-                    else
-                        _yRotation.Value += _currentMousePosition.X - _mousePosition.X;
-                }
+                    if (_mousePressedButton == 1)
+                    {
+                        _xShift.Value += (double)(_currentMousePosition.X - _mousePosition.X) / (double)_defaultTransformationMatrix.M11;
+                        _yShift.Value += (double)(_currentMousePosition.Y - _mousePosition.Y) / (double)_defaultTransformationMatrix.M22;
+                    }
+                    if (_mousePressedButton == 3)
+                    {
+                        if (_xRotation.Value + _currentMousePosition.Y - _mousePosition.Y < 0)
+                            _xRotation.Value += 360 + _currentMousePosition.Y - _mousePosition.Y;
+                        else if (_xRotation.Value + _currentMousePosition.Y - _mousePosition.Y > 360)
+                            _xRotation.Value += -360 + _currentMousePosition.Y - _mousePosition.Y;
+                        else
+                            _xRotation.Value += _currentMousePosition.Y - _mousePosition.Y;
+                    
+                        if (_yRotation.Value + _currentMousePosition.X - _mousePosition.X < 0)
+                            _yRotation.Value += 360 + _currentMousePosition.X - _mousePosition.X;
+                        else if (_yRotation.Value + _currentMousePosition.X - _mousePosition.X > 360)
+                            _yRotation.Value += -360 + _currentMousePosition.X - _mousePosition.X;
+                        else
+                            _yRotation.Value += _currentMousePosition.X - _mousePosition.X;
+                    }
 
-                _mousePosition = _currentMousePosition;
+                    _mousePosition = _currentMousePosition;
+                }
             };
             
             _canvas.ButtonReleaseEvent += (o, args) => _mousePressedButton = 0;
@@ -393,7 +437,7 @@ namespace CG
         
         #region Отрисовка фигруы
         
-        private void DrawPolygon(Context context, Polygon polygon, Vector3 color)
+        private void DrawPolygon(Context context, Polygon polygon)
         {
             if (polygon.Vertexes.Count == 0)
                 return;
@@ -415,65 +459,103 @@ namespace CG
             }
             else
             {
-                if (_lightingModel.Active == (int)LightningModel.Flat)
+                //фоновая составляющая
+                Vector3 I_a = new Vector3((float)_ambientLightColorR.Value,
+                                          (float)_ambientLightColorG.Value,
+                                          (float)_ambientLightColorB.Value);
+
+                if (_lightingModel.Active == (int) Shading.Flat)
                 {
-                    //фоновая составляющая
-                    Vector3 I_a = new Vector3((float)_ambientLightColorR.Value,
-                                              (float)_ambientLightColorG.Value,
-                                              (float)_ambientLightColorB.Value);
-                    
                     //рассеяная составляющая
                     Vector4 L = _pointLight.TransformedPosition - polygon.CalculateCenter();
-                    L /= L.Length();
                     Vector4 N = polygon.CalculatedNormal();
-                    float cosLN = Math.Max(0, (float)(Vector4.Dot(L, N) / (L.Length() * N.Length())));
-                    Vector3 I_d = new Vector3((float)(_k_dR.Value * _pointLightIntensityR.Value * cosLN), 
-                        (float)(_k_dG.Value * _pointLightIntensityG.Value * cosLN), 
-                        (float)(_k_dB.Value * _pointLightIntensityB.Value * cosLN));
-                    
-                    //отражающая составляющая
-                    cosLN = (float)(Vector4.Dot(L, N) / (L.Length() * N.Length()));
+                    float cosLN = (float) (Vector4.Dot(L, N) / (L.Length() * N.Length()));
+                    Vector3 I_d = new Vector3((float) (_k_dR.Value * _pointLightIntensityR.Value * Math.Max(0, cosLN)),
+                                              (float) (_k_dG.Value * _pointLightIntensityG.Value * Math.Max(0, cosLN)),
+                                              (float) (_k_dB.Value * _pointLightIntensityB.Value * Math.Max(0, cosLN)));
+
+                    //отраженная составляющая
                     Vector3 I_s;
                     if (cosLN > 0)
                     {
                         //все происходит в базисе экрана!!!
                         Vector4 R = ((cosLN * N) - L) + N * cosLN; //отраженный от порехности вектор
                         Vector4 S = new Vector4(0, 0, 1, 0);
-                        
-                        float cosRSp = (float)Math.Pow(Math.Max(0, (float)(Vector4.Dot(R, S) / (R.Length() * S.Length()))), _p.Value);
-                        I_s = new Vector3((float)(_k_sR.Value * _pointLightIntensityR.Value * cosRSp), 
-                                          (float)(_k_sG.Value * _pointLightIntensityG.Value * cosRSp), 
-                                          (float)(_k_sB.Value * _pointLightIntensityB.Value * cosRSp));
+
+                        float cosRSp = (float) Math.Pow(Math.Max(0, (float) (Vector4.Dot(R, S) / (R.Length() * S.Length()))),
+                                                        _p.Value);
+                        I_s = new Vector3((float) (_k_sR.Value * _pointLightIntensityR.Value * cosRSp),
+                                          (float) (_k_sG.Value * _pointLightIntensityG.Value * cosRSp),
+                                          (float) (_k_sB.Value * _pointLightIntensityB.Value * cosRSp));
                     }
                     else I_s = Vector3.Zero;
-                    
+
                     Vector3 polygonTrueColor = (I_a + I_d + I_s) * polygon.Color;
-                    
+
                     context.SetSourceRGB(polygonTrueColor.X,
                                          polygonTrueColor.Y,
                                          polygonTrueColor.Z);
-                    
-                    context.Fill();
-                }
 
-                if (_lightingModel.Active == (int)LightningModel.Gouraud)
+                    context.Fill();
+                } else if (_lightingModel.Active == (int) Shading.Gouraud)
                 {
+                    List<Vector3> vertexesTrueColor = new List<Vector3>();
                     
+                    foreach (Vertex vertex in polygon.Vertexes)
+                    {
+                        //рассеяная составляющая
+                        Vector4 L = _pointLight.TransformedPosition - vertex.Point;
+                        L /= L.Length();
+                        Vector4 N = vertex.CalculateNormal();
+                        float cosLN = (float) (Vector4.Dot(L, N) / (L.Length() * N.Length()));
+                        Vector3 I_d = new Vector3((float) (_k_dR.Value * _pointLightIntensityR.Value * Math.Max(0, cosLN)),
+                                                  (float) (_k_dG.Value * _pointLightIntensityG.Value * Math.Max(0, cosLN)),
+                                                  (float) (_k_dB.Value * _pointLightIntensityB.Value * Math.Max(0, cosLN)));
+                        //отраженная составляющая
+                        Vector3 I_s;
+                        if (cosLN > 0)
+                        {
+                            //все происходит в базисе экрана!!!
+                            Vector4 R = ((cosLN * N) - L) + N * cosLN; //отраженный от порехности вектор
+                            Vector4 S = new Vector4(0, 0, 1, 0);
+
+                            float cosRSp = (float) Math.Pow(Math.Max(0, (float) (Vector4.Dot(R, S) / (R.Length() * S.Length()))),
+                                _p.Value);
+                            I_s = new Vector3((float) (_k_sR.Value * _pointLightIntensityR.Value * cosRSp),
+                                              (float) (_k_sG.Value * _pointLightIntensityG.Value * cosRSp),
+                                              (float) (_k_sB.Value * _pointLightIntensityB.Value * cosRSp));
+                        }
+                        else I_s = Vector3.Zero;
+                        
+                        vertexesTrueColor.Add((I_a + I_d + I_s) * vertex.Color);
+                    }
+                    
+                    //заливка работает только для треугольников!!!
+                    _surface.DrawTriangle(vertexesTrueColor[0],  new Vector2(polygon.Vertexes[0].Point.X, polygon.Vertexes[0].Point.Y), 
+                                          vertexesTrueColor[1], new Vector2(polygon.Vertexes[1].Point.X, polygon.Vertexes[1].Point.Y), 
+                                          vertexesTrueColor[2], new Vector2(polygon.Vertexes[2].Point.X, polygon.Vertexes[2].Point.Y));
                 }
             }
         }
 
         private void DrawMesh(Context context, Mesh mesh)
         {
+            if (_lightingModel.Active == (int) Shading.Gouraud)
+                _surface.BeginUpdate(context); 
+            
             if (_allowZBuffer.Active)
             {
-                mesh.TransformedPolygons = mesh.TransformedPolygons.OrderBy(polygon => (polygon.Vertexes.Select(vertex => vertex.Point.Z)).Max()).ToList();
+                mesh.TransformedPolygons = mesh.TransformedPolygons
+                    .OrderBy(polygon => (polygon.Vertexes.Select(vertex => vertex.Point.Z)).Max()).ToList();
             }
             
             for (int i = 0; i < mesh.TransformedPolygons.Count; ++i)
             {
-                DrawPolygon(context, mesh.TransformedPolygons[i], _darkBlue);
+                DrawPolygon(context, mesh.TransformedPolygons[i]);
             }
+            
+            if (_lightingModel.Active == (int) Shading.Gouraud)
+                _surface.EndUpdate();
         }
 
         private void DrawNormal(Context context, Polygon polygon)

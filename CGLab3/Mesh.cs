@@ -11,7 +11,9 @@ namespace CG
 {
     public class Vertex
     {
-        public Vector4 Point;
+        public Vector4 Point = new Vector4();
+        public List<Polygon> Polygons = new List<Polygon>();
+        public Vector3 Color = new Vector3(0.5f, 0.5f, 0.5f);
 
         public Vertex(float x, float y, float z)
         {
@@ -27,21 +29,33 @@ namespace CG
         {
             Point = vector4;
         }
+
+        public Vector4 CalculateNormal()
+        {
+            Vector4 normal = Vector4.Zero;
+            
+            foreach (Polygon polygon in Polygons)
+            {
+                normal += polygon.CalculatedNormal() / Polygons.Count;
+            }
+
+            return normal;
+        }
     }
     
     public class Polygon
     {
-        public List<Vertex> Vertexes;
+        public List<Vertex> Vertexes = new List<Vertex>();
         public Vector3 Color = new Vector3(0.5f, 0.5f, 0.5f);
 
-        public Polygon(Polygon polygon)
-        {
-            Vertexes = polygon.Vertexes;
-        }
-        
         public Polygon(List<Vertex> vertexes)
         {
             Vertexes = vertexes;
+
+            for (int i = 0; i < vertexes.Count; ++i)
+            {
+                vertexes[i].Polygons.Add(this);
+            }
         }
         
         public static Vector3 ToVector3(Vertex vertex)
@@ -51,7 +65,6 @@ namespace CG
         
         public Vector4 CalculatedNormal()
         {
-            // так как у мэша есть только полигоны преобразованных вершин, то номали высчитывыаются от них
             if (Vertexes.Count() >= 3)
             {
                 Vector3 a = ToVector3(Vertexes[1]) - ToVector3(Vertexes[0]);
@@ -73,15 +86,15 @@ namespace CG
             }
 
             return result;
-        } 
+        }
     }
 
     public class Mesh
     {
-        public List<Vertex> Vertices;
-        public List<Vertex> TransformedVertices;
-        public List<Polygon> Polygons;
-        public List<Polygon> TransformedPolygons; //связывают преобразованные вершины
+        public List<Vertex> Vertices = new List<Vertex>();
+        public List<Vertex> TransformedVertices = new List<Vertex>();
+        public List<Polygon> Polygons = new List<Polygon>();
+        public List<Polygon> TransformedPolygons = new List<Polygon>(); //связывают преобразованные вершины
 
         public Mesh()
         {
@@ -135,17 +148,55 @@ namespace CG
 
         public void SetColor(Vector3 color)
         {
-            for (int i = 0; i < TransformedPolygons.Count; ++i)
+            foreach (Polygon polygon in TransformedPolygons)
             {
-                TransformedPolygons[i].Color = color;
+                polygon.Color = color;
+            }
+            
+            foreach (Vertex vertex in TransformedVertices)
+            {
+                vertex.Color = color;
             }
         }
         
         public void SetColor(float r, float g, float b)
         {
-            for (int i = 0; i < TransformedPolygons.Count; ++i)
+            foreach (Polygon polygon in TransformedPolygons)
             {
-                TransformedPolygons[i].Color = new Vector3(r, g, b);
+                polygon.Color = new Vector3(r, g, b);
+            }
+            
+            foreach (Vertex vertex in TransformedVertices)
+            {
+                vertex.Color = new Vector3(r, g, b);
+            }
+        }
+
+        public void TriangulateSquares()
+        {
+            for (int i = 0; i < Polygons.Count; ++i)
+            {
+                if (Polygons[i].Vertexes.Count == 4)
+                {
+                    Polygon first = new Polygon(new List<Vertex>{Polygons[i].Vertexes[0], Polygons[i].Vertexes[1], Polygons[i].Vertexes[2]});
+                    first.Color = Polygons[i].Color;
+                    Polygon second = new Polygon(new List<Vertex>{Polygons[i].Vertexes[2], Polygons[i].Vertexes[3], Polygons[i].Vertexes[0]});
+                    second.Color = Polygons[i].Color;
+                    
+                    Polygons.RemoveAt(i);
+                    Polygons.Insert(i, second);
+                    Polygons.Insert(i, first);
+                    
+                    first = new Polygon(new List<Vertex>{TransformedPolygons[i].Vertexes[0], TransformedPolygons[i].Vertexes[1], TransformedPolygons[i].Vertexes[2]});
+                    first.Color = Polygons[i].Color;
+                    second = new Polygon(new List<Vertex>{TransformedPolygons[i].Vertexes[2], TransformedPolygons[i].Vertexes[3], TransformedPolygons[i].Vertexes[0]});
+                    second.Color = Polygons[i].Color;
+                    
+                    TransformedPolygons.RemoveAt(i);
+                    TransformedPolygons.Insert(i, second);
+                    TransformedPolygons.Insert(i, first);
+                    // вставка с сохранением порядка (может пригодиться?)
+                }
             }
         }
     }
