@@ -127,6 +127,12 @@ namespace CG
             Top,
             Isometric
         }
+        
+        private enum LightningModel
+        {
+            Flat,
+            Gouraud
+        }
 
         #region выстраиваивание сцены
 
@@ -409,43 +415,51 @@ namespace CG
             }
             else
             {
-                //фоновая составляющая
-                Vector3 I_a = new Vector3((float)_ambientLightColorR.Value,
-                                          (float)_ambientLightColorG.Value,
-                                          (float)_ambientLightColorB.Value);
-                
-                //рассеяная составляющая
-                Vector4 L = _pointLight.TransformedPosition - polygon.CalculateCenter();
-                L /= L.Length();
-                Vector4 N = polygon.CalculatedNormal();
-                float cosLN = Math.Max(0, (float)(Vector4.Dot(L, N) / (L.Length() * N.Length())));
-                Vector3 I_d = new Vector3((float)(_k_dR.Value * _pointLightIntensityR.Value * cosLN), 
-                    (float)(_k_dG.Value * _pointLightIntensityG.Value * cosLN), 
-                    (float)(_k_dB.Value * _pointLightIntensityB.Value * cosLN));
-                
-                //отражающая составляющая
-                cosLN = (float)(Vector4.Dot(L, N) / (L.Length() * N.Length()));
-                Vector3 I_s;
-                if (cosLN > 0)
+                if (_lightingModel.Active == (int)LightningModel.Flat)
                 {
-                    //все происходит в базисе экрана!!!
-                    Vector4 R = ((cosLN * N) - L) + N * cosLN; //отраженный от порехности вектор
-                    Vector4 S = new Vector4(0, 0, 1, 0);
+                    //фоновая составляющая
+                    Vector3 I_a = new Vector3((float)_ambientLightColorR.Value,
+                                              (float)_ambientLightColorG.Value,
+                                              (float)_ambientLightColorB.Value);
                     
-                    float cosRSp = (float)Math.Pow(Math.Max(0, (float)(Vector4.Dot(R, S) / (R.Length() * S.Length()))), _p.Value);
-                    I_s = new Vector3((float)(_k_sR.Value * _pointLightIntensityR.Value * cosRSp), 
-                                      (float)(_k_sG.Value * _pointLightIntensityG.Value * cosRSp), 
-                                      (float)(_k_sB.Value * _pointLightIntensityB.Value * cosRSp));
+                    //рассеяная составляющая
+                    Vector4 L = _pointLight.TransformedPosition - polygon.CalculateCenter();
+                    L /= L.Length();
+                    Vector4 N = polygon.CalculatedNormal();
+                    float cosLN = Math.Max(0, (float)(Vector4.Dot(L, N) / (L.Length() * N.Length())));
+                    Vector3 I_d = new Vector3((float)(_k_dR.Value * _pointLightIntensityR.Value * cosLN), 
+                        (float)(_k_dG.Value * _pointLightIntensityG.Value * cosLN), 
+                        (float)(_k_dB.Value * _pointLightIntensityB.Value * cosLN));
+                    
+                    //отражающая составляющая
+                    cosLN = (float)(Vector4.Dot(L, N) / (L.Length() * N.Length()));
+                    Vector3 I_s;
+                    if (cosLN > 0)
+                    {
+                        //все происходит в базисе экрана!!!
+                        Vector4 R = ((cosLN * N) - L) + N * cosLN; //отраженный от порехности вектор
+                        Vector4 S = new Vector4(0, 0, 1, 0);
+                        
+                        float cosRSp = (float)Math.Pow(Math.Max(0, (float)(Vector4.Dot(R, S) / (R.Length() * S.Length()))), _p.Value);
+                        I_s = new Vector3((float)(_k_sR.Value * _pointLightIntensityR.Value * cosRSp), 
+                                          (float)(_k_sG.Value * _pointLightIntensityG.Value * cosRSp), 
+                                          (float)(_k_sB.Value * _pointLightIntensityB.Value * cosRSp));
+                    }
+                    else I_s = Vector3.Zero;
+                    
+                    Vector3 polygonTrueColor = (I_a + I_d + I_s) * polygon.Color;
+                    
+                    context.SetSourceRGB(polygonTrueColor.X,
+                                         polygonTrueColor.Y,
+                                         polygonTrueColor.Z);
+                    
+                    context.Fill();
                 }
-                else I_s = Vector3.Zero;
-                
-                Vector3 polygonTrueColor = (I_a + I_d + I_s) * polygon.Color;
-                
-                context.SetSourceRGB(polygonTrueColor.X,
-                                     polygonTrueColor.Y,
-                                     polygonTrueColor.Z);
-                
-                context.Fill();
+
+                if (_lightingModel.Active == (int)LightningModel.Gouraud)
+                {
+                    
+                }
             }
         }
 
@@ -535,17 +549,17 @@ namespace CG
 
         private void DrawPointLight(Context context, PointLight pointLight)
         {
-            Cairo.Gradient radpat = new RadialGradient(pointLight.TransformedPosition.X, 
+            Cairo.Gradient radialGradient = new RadialGradient(pointLight.TransformedPosition.X, 
                                                        pointLight.TransformedPosition.Y, 
                                                        0, 
                                                        pointLight.TransformedPosition.X, 
                                                        pointLight.TransformedPosition.Y, 50);
-            radpat.AddColorStop(0, new Cairo.Color(1, 1, 1, 1));
-            radpat.AddColorStop(1, new Cairo.Color(0, 0, 0, 0));
+            radialGradient.AddColorStop(0, new Cairo.Color(1, 1, 1, 1));
+            radialGradient.AddColorStop(1, new Cairo.Color(0, 0, 0, 0));
 
 
             context.Rectangle(0, 0, Window.Width, Window.Height);
-            context.Source = radpat;
+            context.SetSource(radialGradient);
             context.Fill();
         }
         
