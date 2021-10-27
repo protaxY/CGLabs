@@ -339,7 +339,7 @@ namespace CG
                 _mousePosition.X = (float)args.Event.X;
                 _mousePosition.Y = (float)args.Event.Y;
             };
-            
+
             _canvas.MotionNotifyEvent += (o, args) =>
             {
                 Vector3 _currentMousePosition = new Vector3((float)args.Event.X, (float)args.Event.Y, 0);
@@ -351,61 +351,57 @@ namespace CG
                 }
                 if (_mousePressedButton == 3)
                 {
-                    // Vector4 mouseShift = new Vector4((float)(_mousePosition.X - _currentMousePosition.X),
-                    //                                  (float)(_mousePosition.Y - _currentMousePosition.Y),
-                    //                                  0f,
-                    //                                  0f);
-                    //
-                    // Matrix4x4 inverseMatrix = new Matrix4x4();
-                    // Matrix4x4.Invert(_transformationMatrix * _defaultTransformationMatrix, out inverseMatrix);
-                    // mouseShift = Vector4.Transform(mouseShift, inverseMatrix);
-                    // mouseShift *= 100;
-                    //
-                    // if (_xRotation.Value + (int)mouseShift.X < 0)
-                    //     _xRotation.Value += 360 + (int)mouseShift.X;
-                    // else if (_xRotation.Value + (int)mouseShift.X > 360)
-                    //     _xRotation.Value += -360 + (int)mouseShift.X;
-                    // else
-                    //     _xRotation.Value += (int)mouseShift.X;
-                    //
-                    // if (_yRotation.Value + (int)mouseShift.Y < 0)
-                    //     _yRotation.Value += 360 + (int)mouseShift.Y;
-                    // else if (_yRotation.Value + (int)mouseShift.Y > 360)
-                    //     _yRotation.Value += -360 + (int)mouseShift.Y;
-                    // else
-                    //     _yRotation.Value += (int)mouseShift.Y;
-                    //
-                    // if (_yRotation.Value + (int)mouseShift.Z < 0)
-                    //     _yRotation.Value += 360 + (int)mouseShift.Z;
-                    // else if (_yRotation.Value + (int)mouseShift.Z > 360)
-                    //     _yRotation.Value += -360 + (int)mouseShift.Z;
-                    // else
-                    //     _yRotation.Value += (int)mouseShift.Z;
+                    Vector4 mouseShift = new Vector4((float)((_currentMousePosition.X - _mousePosition.X + 1)),
+                                                     (float)((_currentMousePosition.Y - _mousePosition.Y + 1)),
+                                                     0f,
+                                                     0f);
                     
-                    if (_mousePressedButton == 1)
-                    {
-                        _xShift.Value += (double)(_currentMousePosition.X - _mousePosition.X) / (double)_defaultTransformationMatrix.M11;
-                        _yShift.Value += (double)(_currentMousePosition.Y - _mousePosition.Y) / (double)_defaultTransformationMatrix.M22;
-                    }
-                    if (_mousePressedButton == 3)
-                    {
-                        if (_xRotation.Value + _currentMousePosition.Y - _mousePosition.Y < 0)
-                            _xRotation.Value += 360 + _currentMousePosition.Y - _mousePosition.Y;
-                        else if (_xRotation.Value + _currentMousePosition.Y - _mousePosition.Y > 360)
-                            _xRotation.Value += -360 + _currentMousePosition.Y - _mousePosition.Y;
-                        else
-                            _xRotation.Value += _currentMousePosition.Y - _mousePosition.Y;
-                    
-                        if (_yRotation.Value + _currentMousePosition.X - _mousePosition.X < 0)
-                            _yRotation.Value += 360 + _currentMousePosition.X - _mousePosition.X;
-                        else if (_yRotation.Value + _currentMousePosition.X - _mousePosition.X > 360)
-                            _yRotation.Value += -360 + _currentMousePosition.X - _mousePosition.X;
-                        else
-                            _yRotation.Value += _currentMousePosition.X - _mousePosition.X;
-                    }
+                    // mouseShift = Vector4.Transform(mouseShift, _transformationMatrix);
 
-                    _mousePosition = _currentMousePosition;
+
+                    Matrix4x4 rot = Matrix4x4.CreateRotationX(mouseShift.Y);
+                    rot *= Matrix4x4.CreateRotationY(mouseShift.X);
+
+                    _transformationMatrix *= rot;
+
+
+                    // if (_xRotation.Value + (int)mouseShift.Y < 0)
+                    //     _xRotation.Value += 360 + (int)mouseShift.Y;
+                    // else if (_xRotation.Value + (int)mouseShift.Y > 360)
+                    //     _xRotation.Value += -360 + (int)mouseShift.Y;
+                    // else
+                    //     _xRotation.Value += (int)mouseShift.Y;
+                    //
+                    // if (_yRotation.Value + (int)mouseShift.X < 0)
+                    //     _yRotation.Value += 360 + (int)mouseShift.X;
+                    // else if (_yRotation.Value + (int)mouseShift.X > 360)
+                    //     _yRotation.Value += -360 + (int)mouseShift.X;
+                    // else
+                    //     _yRotation.Value += (int)mouseShift.X;
+                    //
+                    // if (_zRotation.Value + (int)mouseShift.Z < 0)
+                    //     _zRotation.Value += 360 + (int)mouseShift.Z;
+                    // else if (_zRotation.Value + (int)mouseShift.Z > 360)
+                    //     _zRotation.Value += -360 + (int)mouseShift.Z;
+                    // else
+                    //     _zRotation.Value += (int)mouseShift.Z;
+
+
+                    // if (_xRotation.Value + _currentMousePosition.Y - _mousePosition.Y < 0)
+                    //     _xRotation.Value += 360 + _currentMousePosition.Y - _mousePosition.Y;
+                    // else if (_xRotation.Value + _currentMousePosition.Y - _mousePosition.Y > 360)
+                    //     _xRotation.Value += -360 + _currentMousePosition.Y - _mousePosition.Y;
+                    // else
+                    //     _xRotation.Value += _currentMousePosition.Y - _mousePosition.Y;
+                    //
+                    // if (_yRotation.Value + _currentMousePosition.X - _mousePosition.X < 0)
+                    //     _yRotation.Value += 360 + _currentMousePosition.X - _mousePosition.X;
+                    // else if (_yRotation.Value + _currentMousePosition.X - _mousePosition.X > 360)
+                    //     _yRotation.Value += -360 + _currentMousePosition.X - _mousePosition.X;
+                    // else
+                    //     _yRotation.Value += _currentMousePosition.X - _mousePosition.X;
                 }
+                _mousePosition = _currentMousePosition;
             };
             
             _canvas.ButtonReleaseEvent += (o, args) => _mousePressedButton = 0;
@@ -556,6 +552,17 @@ namespace CG
             
             if (_lightingModel.Active == (int) Shading.Gouraud)
                 _surface.EndUpdate();
+            
+            
+            Matrix4x4 inverseMatrix = new Matrix4x4();
+            Vector4 mouseShift = new Vector4(1, 1, 1, 0);
+            Matrix4x4.Invert(_transformationMatrix * _defaultTransformationMatrix, out inverseMatrix);
+            // mouseShift = Vector4.Transform(mouseShift, inverseMatrix);
+            
+            context.MoveTo(Window.Width / 2, Window.Height / 2);
+            context.LineTo(Window.Width / 2 + 100 * mouseShift.X, Window.Height / 2 + 100 * mouseShift.Y);
+            context.SetSourceRGB(1, 1, 1);
+            context.Stroke();
         }
 
         private void DrawNormal(Context context, Polygon polygon)
