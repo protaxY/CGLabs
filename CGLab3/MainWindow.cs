@@ -614,10 +614,10 @@ namespace CG
 
         private void CalculateTranformationMatrix()
         {
-            _transformationMatrix = Matrix4x4.CreateRotationX((float)(_xRotation.Value * Math.PI / 180)) *
-                                    Matrix4x4.CreateRotationY((float)(_yRotation.Value * Math.PI / 180)) *
-                                    Matrix4x4.CreateRotationZ((float)(_zRotation.Value * Math.PI / 180));
-            _transformationMatrix *= Matrix4x4.CreateScale((float) _xScale.Value, (float) _yScale.Value, (float) _zScale.Value);
+            _transformationMatrix = Matrix4x4.CreateScale((float) _xScale.Value, (float) _yScale.Value, (float) _zScale.Value);
+            _transformationMatrix *= Matrix4x4.CreateRotationX((float)(_xRotation.Value * Math.PI / 180)) *
+                                     Matrix4x4.CreateRotationY((float)(_yRotation.Value * Math.PI / 180)) *
+                                     Matrix4x4.CreateRotationZ((float)(_zRotation.Value * Math.PI / 180));
 
             _transformationMatrix *= Matrix4x4.CreateTranslation((float)_xShift.Value, (float)_yShift.Value, (float)_zShift.Value);
 
