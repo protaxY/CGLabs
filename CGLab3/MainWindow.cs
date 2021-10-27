@@ -167,7 +167,7 @@ namespace CG
                 context.SetSourceRGB(0, 0, 0);
                 context.Paint();
 
-                // context.Antialias = Antialias.Subpixel; // убрал, чтобы не было зазоров между полигонами
+                context.Antialias = Antialias.Subpixel;
                 context.LineWidth = 2d;
                 
                 _figure.ApplyTransformation(_transformationMatrix * _defaultTransformationMatrix);
@@ -351,55 +351,19 @@ namespace CG
                 }
                 if (_mousePressedButton == 3)
                 {
-                    Vector4 mouseShift = new Vector4((float)((_currentMousePosition.X - _mousePosition.X + 1)),
-                                                     (float)((_currentMousePosition.Y - _mousePosition.Y + 1)),
-                                                     0f,
-                                                     0f);
+                    Matrix4x4 mouseRotation = Matrix4x4.CreateRotationX(-(_currentMousePosition.Y - _mousePosition.Y) / 200);
+                    mouseRotation *= Matrix4x4.CreateRotationY((_currentMousePosition.X - _mousePosition.X) / 200);
                     
-                    // mouseShift = Vector4.Transform(mouseShift, _transformationMatrix);
-
-
-                    Matrix4x4 rot = Matrix4x4.CreateRotationX(mouseShift.Y);
-                    rot *= Matrix4x4.CreateRotationY(mouseShift.X);
-
-                    _transformationMatrix *= rot;
-
-
-                    // if (_xRotation.Value + (int)mouseShift.Y < 0)
-                    //     _xRotation.Value += 360 + (int)mouseShift.Y;
-                    // else if (_xRotation.Value + (int)mouseShift.Y > 360)
-                    //     _xRotation.Value += -360 + (int)mouseShift.Y;
-                    // else
-                    //     _xRotation.Value += (int)mouseShift.Y;
-                    //
-                    // if (_yRotation.Value + (int)mouseShift.X < 0)
-                    //     _yRotation.Value += 360 + (int)mouseShift.X;
-                    // else if (_yRotation.Value + (int)mouseShift.X > 360)
-                    //     _yRotation.Value += -360 + (int)mouseShift.X;
-                    // else
-                    //     _yRotation.Value += (int)mouseShift.X;
-                    //
-                    // if (_zRotation.Value + (int)mouseShift.Z < 0)
-                    //     _zRotation.Value += 360 + (int)mouseShift.Z;
-                    // else if (_zRotation.Value + (int)mouseShift.Z > 360)
-                    //     _zRotation.Value += -360 + (int)mouseShift.Z;
-                    // else
-                    //     _zRotation.Value += (int)mouseShift.Z;
-
-
-                    // if (_xRotation.Value + _currentMousePosition.Y - _mousePosition.Y < 0)
-                    //     _xRotation.Value += 360 + _currentMousePosition.Y - _mousePosition.Y;
-                    // else if (_xRotation.Value + _currentMousePosition.Y - _mousePosition.Y > 360)
-                    //     _xRotation.Value += -360 + _currentMousePosition.Y - _mousePosition.Y;
-                    // else
-                    //     _xRotation.Value += _currentMousePosition.Y - _mousePosition.Y;
-                    //
-                    // if (_yRotation.Value + _currentMousePosition.X - _mousePosition.X < 0)
-                    //     _yRotation.Value += 360 + _currentMousePosition.X - _mousePosition.X;
-                    // else if (_yRotation.Value + _currentMousePosition.X - _mousePosition.X > 360)
-                    //     _yRotation.Value += -360 + _currentMousePosition.X - _mousePosition.X;
-                    // else
-                    //     _yRotation.Value += _currentMousePosition.X - _mousePosition.X;
+                    Matrix4x4 currnetRotation = Matrix4x4.CreateRotationX((float)(_xRotation.Value * Math.PI / 180)) *
+                                  Matrix4x4.CreateRotationY((float)(_yRotation.Value * Math.PI / 180)) *
+                                  Matrix4x4.CreateRotationZ((float)(_zRotation.Value * Math.PI / 180)) * 
+                                  mouseRotation;
+                    
+                    //для углов Эйлера
+                    MatrixToAngles(currnetRotation, out var x, out var y, out var z);
+                    _xRotation.Value = x;
+                    _yRotation.Value = y;
+                    _zRotation.Value = z;
                 }
                 _mousePosition = _currentMousePosition;
             };
@@ -557,12 +521,6 @@ namespace CG
             Matrix4x4 inverseMatrix = new Matrix4x4();
             Vector4 mouseShift = new Vector4(1, 1, 1, 0);
             Matrix4x4.Invert(_transformationMatrix * _defaultTransformationMatrix, out inverseMatrix);
-            // mouseShift = Vector4.Transform(mouseShift, inverseMatrix);
-            
-            context.MoveTo(Window.Width / 2, Window.Height / 2);
-            context.LineTo(Window.Width / 2 + 100 * mouseShift.X, Window.Height / 2 + 100 * mouseShift.Y);
-            context.SetSourceRGB(1, 1, 1);
-            context.Stroke();
         }
 
         private void DrawNormal(Context context, Polygon polygon)
@@ -582,7 +540,7 @@ namespace CG
             context.SetSourceRGB(0, 1, 1);
             context.Stroke();
 
-            // #region отладочная отрисовка для отраженной составляющей
+            #region отладочная отрисовка для отраженной составляющей
             //
             // Vector4 L = _pointLight.TransformedPosition - polygon.CalculateCenter();
             // L /= L.Length();
@@ -600,7 +558,7 @@ namespace CG
             // Matrix4x4 _invertedTransformationMatrix;
             // Matrix4x4.Invert(_transformationMatrix, out _invertedTransformationMatrix);
             //
-            // #endregion
+            #endregion
         }
         
         private void DrawNormals(Context context, Mesh mesh)
@@ -656,11 +614,11 @@ namespace CG
 
         private void CalculateTranformationMatrix()
         {
-            _transformationMatrix = Matrix4x4.CreateScale((float) _xScale.Value, (float) _yScale.Value, (float) _zScale.Value);
-            _transformationMatrix *= Matrix4x4.CreateRotationX((float)(_xRotation.Value * Math.PI / 180)) *
-                                     Matrix4x4.CreateRotationY((float)(_yRotation.Value * Math.PI / 180)) *
-                                     Matrix4x4.CreateRotationZ((float)(_zRotation.Value * Math.PI / 180));
-        
+            _transformationMatrix = Matrix4x4.CreateRotationX((float)(_xRotation.Value * Math.PI / 180)) *
+                                    Matrix4x4.CreateRotationY((float)(_yRotation.Value * Math.PI / 180)) *
+                                    Matrix4x4.CreateRotationZ((float)(_zRotation.Value * Math.PI / 180));
+            _transformationMatrix *= Matrix4x4.CreateScale((float) _xScale.Value, (float) _yScale.Value, (float) _zScale.Value);
+
             _transformationMatrix *= Matrix4x4.CreateTranslation((float)_xShift.Value, (float)_yShift.Value, (float)_zShift.Value);
 
             #region Обновление спинбатоннов для матрицы
@@ -687,6 +645,7 @@ namespace CG
         
         private static void MatrixToAngles(Matrix4x4 matrix, out double x, out double y, out double z)
         {
+            //область определения аркстангенса от pi/2 до -pi/2
             x = Math.Atan2(matrix.M23, matrix.M33) / Math.PI * 180;
             y = Math.Atan2(-matrix.M13, Math.Sqrt(1 - matrix.M13 * matrix.M13)) / Math.PI * 180;
             z = Math.Atan2(matrix.M12, matrix.M11) / Math.PI * 180;
