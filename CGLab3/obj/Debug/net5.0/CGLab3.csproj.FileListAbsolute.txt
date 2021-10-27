@@ -21,4 +21,3 @@ C:\Users\prota\Desktop\CGLabs\CGLab3\obj\Debug\net5.0\CGLab3.dll
 C:\Users\prota\Desktop\CGLabs\CGLab3\obj\Debug\net5.0\ref\CGLab3.dll
 C:\Users\prota\Desktop\CGLabs\CGLab3\obj\Debug\net5.0\CGLab3.pdb
 C:\Users\prota\Desktop\CGLabs\CGLab3\obj\Debug\net5.0\CGLab3.genruntimeconfig.cache
-C:\Users\prota\Desktop\CGLabs\CGLab3\obj\Debug\net5.0\CGLab3.csproj.CopyComplete

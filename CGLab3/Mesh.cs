@@ -13,7 +13,7 @@ namespace CG
     {
         public Vector4 Point = new Vector4();
         public List<Polygon> Polygons = new List<Polygon>();
-        public Vector3 Color = new Vector3(0.5f, 0.5f, 0.5f);
+        public Vector3 Color = new Vector3(0.57f, 0.81f, 0.21f);
 
         public Vertex(float x, float y, float z)
         {
@@ -36,7 +36,7 @@ namespace CG
             
             foreach (Polygon polygon in Polygons)
             {
-                normal += polygon.CalculatedNormal() / Polygons.Count;
+                normal += polygon.CalculateNormal() / Polygons.Count;
             }
 
             return normal;
@@ -46,7 +46,7 @@ namespace CG
     public class Polygon
     {
         public List<Vertex> Vertexes = new List<Vertex>();
-        public Vector3 Color = new Vector3(0.5f, 0.5f, 0.5f);
+        public Vector3 Color = new Vector3(0.57f, 0.81f, 0.21f);
 
         public Polygon(List<Vertex> vertexes)
         {
@@ -63,7 +63,7 @@ namespace CG
             return new Vector3(vertex.Point.X, vertex.Point.Y, vertex.Point.Z);
         }
         
-        public Vector4 CalculatedNormal()
+        public Vector4 CalculateNormal()
         {
             if (Vertexes.Count() >= 3)
             {

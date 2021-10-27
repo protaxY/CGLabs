@@ -73,6 +73,8 @@ namespace CG
         [UI] private Adjustment _pointLightPositionX = null;
         [UI] private Adjustment _pointLightPositionY = null;
         [UI] private Adjustment _pointLightPositionZ = null;
+        
+        [UI] private Adjustment _attenuationСoefficient = null;
 
         #endregion
 
@@ -102,6 +104,7 @@ namespace CG
         [UI] private ComboBoxText _lightingModel = null;
         
         private float _defaultScale = 200;
+        private float _mouseRotationSensitivity = 1f / 200f;
         private float _compressedScale = 1;
         private Matrix4x4 _defaultTransformationMatrix;
         private Matrix4x4 _transformationMatrix;
@@ -137,7 +140,7 @@ namespace CG
         #region выстраиваивание сцены
 
         private Mesh _figure = new Ellipsoid(1, 1, 1, 50, 25);
-        private PointLight _pointLight = new PointLight(2, 0, 0, 1, 1, 1);
+        private PointLight _pointLight = new PointLight(3, 0, 0, 1, 1, 1);
         
         #endregion
         
@@ -303,6 +306,8 @@ namespace CG
             _pointLightPositionZ.ValueChanged += (o, args) => {_pointLight.Position.Z = (float)_pointLightPositionZ.Value; 
                                                                      _canvas.QueueDraw();};
             
+            _attenuationСoefficient.ValueChanged += (o, args) => {_canvas.QueueDraw();};
+            
             _lightingModel.Changed += (o, args) => {_canvas.QueueDraw(); };
             
             #endregion
@@ -351,8 +356,8 @@ namespace CG
                 }
                 if (_mousePressedButton == 3)
                 {
-                    Matrix4x4 mouseRotation = Matrix4x4.CreateRotationX(-(_currentMousePosition.Y - _mousePosition.Y) / 200);
-                    mouseRotation *= Matrix4x4.CreateRotationY((_currentMousePosition.X - _mousePosition.X) / 200);
+                    Matrix4x4 mouseRotation = Matrix4x4.CreateRotationX(-(_currentMousePosition.Y - _mousePosition.Y) * _mouseRotationSensitivity);
+                    mouseRotation *= Matrix4x4.CreateRotationY((_currentMousePosition.X - _mousePosition.X) * _mouseRotationSensitivity);
                     
                     Matrix4x4 currnetRotation = Matrix4x4.CreateRotationX((float)(_xRotation.Value * Math.PI / 180)) *
                                   Matrix4x4.CreateRotationY((float)(_yRotation.Value * Math.PI / 180)) *
@@ -401,7 +406,7 @@ namespace CG
         {
             if (polygon.Vertexes.Count == 0)
                 return;
-            if (_allowInvisPoly.Active && polygon.CalculatedNormal().Z < 0)
+            if (_allowInvisPoly.Active && polygon.CalculateNormal().Z < 0)
                 return;
 
             context.MoveTo(polygon.Vertexes[0].Point.X, polygon.Vertexes[0].Point.Y);
@@ -428,25 +433,32 @@ namespace CG
                 {
                     //рассеяная составляющая
                     Vector4 L = _pointLight.TransformedPosition - polygon.CalculateCenter();
-                    Vector4 N = polygon.CalculatedNormal();
+                    Vector4 N = polygon.CalculateNormal();
                     float cosLN = (float) (Vector4.Dot(L, N) / (L.Length() * N.Length()));
                     Vector3 I_d = new Vector3((float) (_k_dR.Value * _pointLightIntensityR.Value * Math.Max(0, cosLN)),
                                               (float) (_k_dG.Value * _pointLightIntensityG.Value * Math.Max(0, cosLN)),
                                               (float) (_k_dB.Value * _pointLightIntensityB.Value * Math.Max(0, cosLN)));
-
+                    
+                    // все в преобразованном базисе. поэтому надо поделить на _defaultScale
+                    I_d /= (float)(Math.Pow(L.Length(), 2) * (_attenuationСoefficient.Value / Math.Pow(_defaultScale, 2)));
+                    
                     //отраженная составляющая
                     Vector3 I_s;
                     if (cosLN > 0)
                     {
                         //все происходит в базисе экрана!!!
-                        Vector4 R = ((cosLN * N) - L) + N * cosLN; //отраженный от порехности вектор
+                        Vector4 normalizedL = L / L.Length();
+                        Vector4 R = ((cosLN * N) - normalizedL) + N * cosLN; //отраженный от порехности вектор
                         Vector4 S = new Vector4(0, 0, 1, 0);
 
                         float cosRSp = (float) Math.Pow(Math.Max(0, (float) (Vector4.Dot(R, S) / (R.Length() * S.Length()))),
                                                         _p.Value);
+
                         I_s = new Vector3((float) (_k_sR.Value * _pointLightIntensityR.Value * cosRSp),
                                           (float) (_k_sG.Value * _pointLightIntensityG.Value * cosRSp),
                                           (float) (_k_sB.Value * _pointLightIntensityB.Value * cosRSp));
+                        // отражение не должно затухать от расстояния, кажется
+                        // I_s /= (float)(Math.Pow(L.Length(), 2) * (_attenuationСoefficient.Value / Math.Pow(_defaultScale, 2)));
                     }
                     else I_s = Vector3.Zero;
 
@@ -465,18 +477,20 @@ namespace CG
                     {
                         //рассеяная составляющая
                         Vector4 L = _pointLight.TransformedPosition - vertex.Point;
-                        L /= L.Length();
                         Vector4 N = vertex.CalculateNormal();
                         float cosLN = (float) (Vector4.Dot(L, N) / (L.Length() * N.Length()));
                         Vector3 I_d = new Vector3((float) (_k_dR.Value * _pointLightIntensityR.Value * Math.Max(0, cosLN)),
                                                   (float) (_k_dG.Value * _pointLightIntensityG.Value * Math.Max(0, cosLN)),
                                                   (float) (_k_dB.Value * _pointLightIntensityB.Value * Math.Max(0, cosLN)));
+                        I_d /= (float)(Math.Pow(L.Length(), 2) * (_attenuationСoefficient.Value / Math.Pow(_defaultScale, 2)));
+                        
                         //отраженная составляющая
                         Vector3 I_s;
                         if (cosLN > 0)
                         {
                             //все происходит в базисе экрана!!!
-                            Vector4 R = ((cosLN * N) - L) + N * cosLN; //отраженный от порехности вектор
+                            Vector4 normalizedL = L / L.Length();
+                            Vector4 R = ((cosLN * N) - normalizedL) + N * cosLN; //отраженный от порехности вектор
                             Vector4 S = new Vector4(0, 0, 1, 0);
 
                             float cosRSp = (float) Math.Pow(Math.Max(0, (float) (Vector4.Dot(R, S) / (R.Length() * S.Length()))),
@@ -484,6 +498,8 @@ namespace CG
                             I_s = new Vector3((float) (_k_sR.Value * _pointLightIntensityR.Value * cosRSp),
                                               (float) (_k_sG.Value * _pointLightIntensityG.Value * cosRSp),
                                               (float) (_k_sB.Value * _pointLightIntensityB.Value * cosRSp));
+                            // отражение не должно затухать от расстояния, кажется
+                            // I_s /= (float)(Math.Pow(L.Length(), 2) * (_attenuationСoefficient.Value / Math.Pow(_defaultScale, 2)));
                         }
                         else I_s = Vector3.Zero;
                         
@@ -525,7 +541,7 @@ namespace CG
 
         private void DrawNormal(Context context, Polygon polygon)
         {
-            Vector4 normal = Vector4.Transform(polygon.CalculatedNormal(), _transformationMatrix * _defaultTransformationMatrix);
+            Vector4 normal = Vector4.Transform(polygon.CalculateNormal(), _transformationMatrix * _defaultTransformationMatrix);
             normal /= normal.Length();
             normal *= 50;
             
@@ -541,30 +557,34 @@ namespace CG
             context.Stroke();
 
             #region отладочная отрисовка для отраженной составляющей
-            //
-            // Vector4 L = _pointLight.TransformedPosition - polygon.CalculateCenter();
+            
+            // Vector4 L = _pointLight.Position - polygon.CalculateCenter();
+            // L = Vector4.Transform(L, _transformationMatrix * _defaultTransformationMatrix);
             // L /= L.Length();
-            // Vector4 N = polygon.CalculateNormal();
-            // float cosLN = Math.Max(0, (float)(Vector4.Dot(L, N) / (L.Length() * N.Length())));
+            // L *= 50;
+            // Vector4 N = Vector4.Transform(polygon.CalculateNormal(), _transformationMatrix * _defaultTransformationMatrix);
+            // N /= N.Length();
+            // N *= 50;
+            // float cosLN = (float)(Vector4.Dot(L, N) / (L.Length() * N.Length()));
             // Vector4 R = ((cosLN * N) - L) + N * cosLN;
-            // R *= 100;
             //
             // context.MoveTo(polygonCenter.X, polygonCenter.Y);
-            // context.LineTo(polygonCenter.X + R.X, polygonCenter.Y + R.Y);
+            // context.LineTo(polygonCenter.X + L.X, polygonCenter.Y + L.Y);
             //
             // context.SetSourceRGB(0, 1, 0);
             // context.Stroke();
             //
-            // Matrix4x4 _invertedTransformationMatrix;
-            // Matrix4x4.Invert(_transformationMatrix, out _invertedTransformationMatrix);
+            // context.MoveTo(polygonCenter.X, polygonCenter.Y);
+            // context.LineTo(polygonCenter.X + R.X, polygonCenter.Y + R.Y);
             //
+            // context.SetSourceRGB(1, 0, 0);
+            // context.Stroke();
+            
             #endregion
         }
         
         private void DrawNormals(Context context, Mesh mesh)
         {
-            // чтобы не возникало бага с отрисовкой, когда полигон схлопнут,
-            // нормали вычисляются в мировой системе координат
             foreach (var polygon in mesh.Polygons)
             {
                 DrawNormal(context, polygon);
@@ -601,7 +621,7 @@ namespace CG
                                                        0, 
                                                        pointLight.TransformedPosition.X, 
                                                        pointLight.TransformedPosition.Y, 50);
-            radialGradient.AddColorStop(0, new Cairo.Color(1, 1, 1, 1));
+            radialGradient.AddColorStop(0, new Cairo.Color( _pointLightIntensityR.Value, _pointLightIntensityG.Value, _pointLightIntensityB.Value, 1));
             radialGradient.AddColorStop(1, new Cairo.Color(0, 0, 0, 0));
 
 
