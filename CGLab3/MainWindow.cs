@@ -60,10 +60,6 @@ namespace CG
         
         [UI] private Adjustment _p = null;
 
-        [UI] private Adjustment _ambientLightColorR = null;
-        [UI] private Adjustment _ambientLightColorG = null;
-        [UI] private Adjustment _ambientLightColorB = null;
-        
         [UI] private CheckButton _allowPointLightVisible = null;
             
         [UI] private Adjustment _pointLightIntensityR = null;
@@ -290,10 +286,6 @@ namespace CG
             _k_sB.ValueChanged += (o, args) => {_canvas.QueueDraw();};
             
             _p.ValueChanged += (o, args) => {_canvas.QueueDraw();};
-            
-            _ambientLightColorR.ValueChanged += (o, args) => {_canvas.QueueDraw();};
-            _ambientLightColorG.ValueChanged += (o, args) => {_canvas.QueueDraw();};
-            _ambientLightColorB.ValueChanged += (o, args) => {_canvas.QueueDraw();};
 
             _allowPointLightVisible.Toggled += (o, args) => {_canvas.QueueDraw(); };
 
@@ -430,9 +422,9 @@ namespace CG
             else
             {
                 //фоновая составляющая
-                Vector3 I_a = new Vector3((float)_ambientLightColorR.Value,
-                                          (float)_ambientLightColorG.Value,
-                                          (float)_ambientLightColorB.Value);
+                Vector3 I_a = new Vector3((float)_k_aR.Value,
+                                          (float)_k_aG.Value,
+                                          (float)_k_aB.Value);
 
                 if (_lightingModel.Active == (int) Shading.Flat)
                 {
