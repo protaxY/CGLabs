@@ -236,27 +236,32 @@ namespace CG
             _a.ValueChanged += (o, args) => { _figure = new Ellipsoid((float)_a.Value, 
                     (float)_b.Value, (float)_c.Value, 
                     (int)_meridiansCount.Value, 
-                    (int)_parallelsCount.Value); 
+                    (int)_parallelsCount.Value);
+                    _figure.TriangulateSquares();
                     _canvas.QueueDraw();};
             _b.ValueChanged += (o, args) => { _figure = new Ellipsoid((float)_a.Value, 
                     (float)_b.Value, (float)_c.Value, 
                     (int)_meridiansCount.Value, 
-                    (int)_parallelsCount.Value); 
+                    (int)_parallelsCount.Value);
+                    _figure.TriangulateSquares();
                     _canvas.QueueDraw();};
             _c.ValueChanged += (o, args) => { _figure = new Ellipsoid((float)_a.Value, 
                     (float)_b.Value, (float)_c.Value, 
                     (int)_meridiansCount.Value, 
-                    (int)_parallelsCount.Value); 
+                    (int)_parallelsCount.Value);
+                    _figure.TriangulateSquares();
                     _canvas.QueueDraw();};
             _meridiansCount.ValueChanged += (o, args) => { _figure = new Ellipsoid((float)_a.Value, 
                     (float)_b.Value, (float)_c.Value, 
                     (int)_meridiansCount.Value, 
-                    (int)_parallelsCount.Value); 
+                    (int)_parallelsCount.Value);
+                    _figure.TriangulateSquares();
                     _canvas.QueueDraw();};
             _parallelsCount.ValueChanged += (o, args) => { _figure = new Ellipsoid((float)_a.Value, 
                     (float)_b.Value, (float)_c.Value, 
                     (int)_meridiansCount.Value, 
-                    (int)_parallelsCount.Value); 
+                    (int)_parallelsCount.Value);
+                    _figure.TriangulateSquares();
                     _canvas.QueueDraw();};
 
             _materialColorR.ValueChanged += (o, args) => {_figure.SetColor((float)_materialColorR.Value, 
