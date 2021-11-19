@@ -3,12 +3,15 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Numerics;
 using Gtk;
-using Cairo;
-
 using Gdk;
-using GLib;
+using Cairo;
+using System.IO;
+using System.Text;
+
+
+using SharpGL;
+using SharpGL.Shaders;
 using Application = Gtk.Application;
-using Color = System.Drawing.Color;
 using Window = Gtk.Window;
 using UI = Gtk.Builder.ObjectAttribute;
 
@@ -16,7 +19,7 @@ namespace CG
 {
     class MainWindow : Window
     {
-        [UI] private DrawingArea _canvas = null;
+        [UI] private GLArea _glArea = null;
 
         #region UI спинбаттонов и чекбоксов
 
@@ -34,42 +37,42 @@ namespace CG
         [UI] private Adjustment _xShift = null;
         [UI] private Adjustment _yShift = null;
         [UI] private Adjustment _zShift = null;
-        
+
         [UI] private Adjustment _a = null;
         [UI] private Adjustment _b = null;
         [UI] private Adjustment _c = null;
-        
+
         [UI] private Adjustment _meridiansCount = null;
         [UI] private Adjustment _parallelsCount = null;
 
         [UI] private Adjustment _materialColorR = null;
         [UI] private Adjustment _materialColorG = null;
         [UI] private Adjustment _materialColorB = null;
-        
+
         [UI] private Adjustment _k_aR = null;
         [UI] private Adjustment _k_aG = null;
         [UI] private Adjustment _k_aB = null;
-        
+
         [UI] private Adjustment _k_dR = null;
         [UI] private Adjustment _k_dG = null;
         [UI] private Adjustment _k_dB = null;
-        
+
         [UI] private Adjustment _k_sR = null;
         [UI] private Adjustment _k_sG = null;
         [UI] private Adjustment _k_sB = null;
-        
+
         [UI] private Adjustment _p = null;
 
         [UI] private CheckButton _allowPointLightVisible = null;
-            
+
         [UI] private Adjustment _pointLightIntensityR = null;
         [UI] private Adjustment _pointLightIntensityG = null;
         [UI] private Adjustment _pointLightIntensityB = null;
-        
+
         [UI] private Adjustment _pointLightPositionX = null;
         [UI] private Adjustment _pointLightPositionY = null;
         [UI] private Adjustment _pointLightPositionZ = null;
-        
+
         [UI] private Adjustment _attenuationСoefficient = null;
 
         #endregion
@@ -94,11 +97,11 @@ namespace CG
         [UI] private Adjustment _m44 = null;
 
         #endregion
-        
+
         [UI] private ComboBoxText _projectionMode = null;
-        
+
         [UI] private ComboBoxText _lightingModel = null;
-        
+
         private float _defaultScale = 200;
         private float _mouseRotationSensitivity = 1f / 200f;
         private float _compressedScale = 1;
@@ -108,16 +111,16 @@ namespace CG
         private float _axisSize = 40;
         private Vector3 _axisPosition = Vector3.One;
         private Matrix4x4 _axisTransformMatrix = Matrix4x4.Identity;
-        
+
         #region Мышь
 
         private Vector3 _mousePosition = new Vector3(0, 0, 0);
         private uint _mousePressedButton = 0;
 
         #endregion
-        
+
         private CairoSurface _surface;
-        
+
         private enum Projection
         {
             None,
@@ -126,7 +129,7 @@ namespace CG
             Top,
             Isometric
         }
-        
+
         private enum Shading
         {
             Flat,
@@ -137,16 +140,12 @@ namespace CG
 
         private Mesh _figure = new Ellipsoid(1, 1, 1, 50, 25);
         private PointLight _pointLight = new PointLight(3, 0, 0, 1, 1, 1);
-        
+
         #endregion
-        
+
         public MainWindow() : this(new Builder("CGLab4.glade"))
         {
-            _transformationMatrix = new Matrix4x4(
-                1, 0, 0, 0,
-                0, 1, 0, 0,
-                0, 0, 1, 0,
-                0, 0, 0, 1);
+            _transformationMatrix = Matrix4x4.Identity;
             CalculateTranformationMatrix();
 
             _figure.TriangulateSquares();
@@ -156,53 +155,30 @@ namespace CG
         {
             builder.Autoconnect(this);
             DeleteEvent += (o, args) => Application.Quit();
-
-            _surface = new CairoSurface(_canvas);
             
-            _canvas.Drawn += (o, args) =>
+            _glArea.Realized += GLInit;
+
+            _glArea.SizeAllocated += (o, args) =>
             {
-                var context = args.Cr;
-                
-                context.SetSourceRGB(0, 0, 0);
-                context.Paint();
-
-                context.Antialias = Antialias.Subpixel;
-                context.LineWidth = 2d;
-                
-                _figure.ApplyTransformation(_transformationMatrix * _defaultTransformationMatrix);
-                _pointLight.ApplyTransformation(_transformationMatrix * _defaultTransformationMatrix);
-                
-                DrawMesh(context, _figure);
-                if (_allowPointLightVisible.Active)
+                if (_defaultScale > Math.Min(args.Allocation.Width, args.Allocation.Height))
                 {
-                    DrawPointLight(context, _pointLight);
-                }
-
-                if (_allowNormals.Active)
-                {
-                    DrawNormals(context, _figure);
-                }
-                
-                CalculateAxisTransformationMatrix();
-                DrawAxis(context);
-            };
-
-            _canvas.SizeAllocated += (o, args) =>
-            {
-                if (_defaultScale > Math.Min(args.Allocation.Width, args.Allocation.Height)){
                     _compressedScale = Math.Min(args.Allocation.Width, args.Allocation.Height) / _defaultScale;
                 }
-                if (_defaultScale < Math.Min(args.Allocation.Width, args.Allocation.Height)){
+
+                if (_defaultScale < Math.Min(args.Allocation.Width, args.Allocation.Height))
+                {
                     _compressedScale = Math.Min(args.Allocation.Width, args.Allocation.Height) / _defaultScale;
-                    if (_compressedScale > 1){
+                    if (_compressedScale > 1)
+                    {
                         _compressedScale = 1;
                     }
                 }
 
                 float trueScale = _defaultScale * _compressedScale;
-                
+
                 _defaultTransformationMatrix = Matrix4x4.CreateScale(trueScale, trueScale, trueScale);
-                _defaultTransformationMatrix *= Matrix4x4.CreateTranslation(args.Allocation.Width / 2, args.Allocation.Height / 2, 0);
+                _defaultTransformationMatrix *=
+                    Matrix4x4.CreateTranslation(args.Allocation.Width / 2, args.Allocation.Height / 2, 0);
 
                 _axisPosition.X = args.Allocation.Width - 45;
                 _axisPosition.Y = args.Allocation.Height - 45;
@@ -210,184 +186,355 @@ namespace CG
 
             #region Обработка спинбатоннов, чекбоксов и комботекстбоксов
 
-            _xShift.ValueChanged += (o, args) => { CalculateTranformationMatrix(); _canvas.QueueDraw();};
-            _yShift.ValueChanged += (o, args) => { CalculateTranformationMatrix(); _canvas.QueueDraw();};
-            _zShift.ValueChanged += (o, args) => { CalculateTranformationMatrix(); _canvas.QueueDraw();};
+            _xShift.ValueChanged += (o, args) =>
+            {
+                CalculateTranformationMatrix();
+                
+            };
+            _yShift.ValueChanged += (o, args) =>
+            {
+                CalculateTranformationMatrix();
+                
+            };
+            _zShift.ValueChanged += (o, args) =>
+            {
+                CalculateTranformationMatrix();
+                
+            };
 
-            _xScale.ValueChanged += (o, args) => { CalculateTranformationMatrix(); _canvas.QueueDraw();};
-            _yScale.ValueChanged += (o, args) => { CalculateTranformationMatrix(); _canvas.QueueDraw();};
-            _zScale.ValueChanged += (o, args) => { CalculateTranformationMatrix(); _canvas.QueueDraw();};
-            
-            _xRotation.ValueChanged += (o, args) => { CalculateTranformationMatrix(); _canvas.QueueDraw();};
-            _yRotation.ValueChanged += (o, args) => { CalculateTranformationMatrix(); _canvas.QueueDraw();};
-            _zRotation.ValueChanged += (o, args) => { CalculateTranformationMatrix(); _canvas.QueueDraw();};
-            
-            _allowNormals.Toggled += (o, args) => { CalculateTranformationMatrix(); _canvas.QueueDraw();};
-            _allowWireframe.Toggled += (o, args) => { CalculateTranformationMatrix(); _canvas.QueueDraw();};
-            _allowInvisPoly.Toggled += (o, args) => { CalculateTranformationMatrix(); _canvas.QueueDraw();};
-            _allowZBuffer.Toggled += (o, args) => { CalculateTranformationMatrix(); _canvas.QueueDraw();};
+            _xScale.ValueChanged += (o, args) =>
+            {
+                CalculateTranformationMatrix();
+                
+            };
+            _yScale.ValueChanged += (o, args) =>
+            {
+                CalculateTranformationMatrix();
+                
+            };
+            _zScale.ValueChanged += (o, args) =>
+            {
+                CalculateTranformationMatrix();
+                
+            };
 
-            _projectionMode.Changed += (o, args) => { SetProjection(); CalculateTranformationMatrix(); _canvas.QueueDraw();};
-            
-            _a.ValueChanged += (o, args) => { _figure = new Ellipsoid((float)_a.Value, 
-                    (float)_b.Value, (float)_c.Value, 
-                    (int)_meridiansCount.Value, 
-                    (int)_parallelsCount.Value);
-                    _figure.TriangulateSquares();
-                    _figure.SetColor((float) _materialColorR.Value,
-                                     (float) _materialColorG.Value,
-                                     (float) _materialColorB.Value);
-                    _canvas.QueueDraw();};
-            _b.ValueChanged += (o, args) => { _figure = new Ellipsoid((float)_a.Value, 
-                    (float)_b.Value, (float)_c.Value, 
-                    (int)_meridiansCount.Value, 
-                    (int)_parallelsCount.Value);
-                    _figure.TriangulateSquares();
-                    _figure.SetColor((float) _materialColorR.Value,
-                        (float) _materialColorG.Value,
-                        (float) _materialColorB.Value);
-                    _canvas.QueueDraw();};
-            _c.ValueChanged += (o, args) => { _figure = new Ellipsoid((float)_a.Value, 
-                    (float)_b.Value, (float)_c.Value, 
-                    (int)_meridiansCount.Value, 
-                    (int)_parallelsCount.Value);
-                    _figure.TriangulateSquares();
-                    _figure.SetColor((float) _materialColorR.Value,
-                                     (float) _materialColorG.Value,
-                                     (float) _materialColorB.Value);
-                    _canvas.QueueDraw();};
-            _meridiansCount.ValueChanged += (o, args) => { _figure = new Ellipsoid((float)_a.Value, 
-                    (float)_b.Value, (float)_c.Value, 
-                    (int)_meridiansCount.Value, 
-                    (int)_parallelsCount.Value);
-                    _figure.TriangulateSquares();
-                    _figure.SetColor((float) _materialColorR.Value,
-                                     (float) _materialColorG.Value,
-                                     (float) _materialColorB.Value);
-                    _canvas.QueueDraw();};
-            _parallelsCount.ValueChanged += (o, args) => { _figure = new Ellipsoid((float)_a.Value, 
-                    (float)_b.Value, (float)_c.Value, 
-                    (int)_meridiansCount.Value, 
-                    (int)_parallelsCount.Value);
-                    _figure.TriangulateSquares();
-                    _figure.SetColor((float) _materialColorR.Value,
-                                     (float) _materialColorG.Value,
-                                     (float) _materialColorB.Value);
-                    _canvas.QueueDraw();};
+            _xRotation.ValueChanged += (o, args) =>
+            {
+                CalculateTranformationMatrix();
+                
+            };
+            _yRotation.ValueChanged += (o, args) =>
+            {
+                CalculateTranformationMatrix();
+                
+            };
+            _zRotation.ValueChanged += (o, args) =>
+            {
+                CalculateTranformationMatrix();
+                
+            };
 
-            _materialColorR.ValueChanged += (o, args) => {_figure.SetColor((float)_materialColorR.Value, 
-                                                                                 (float)_materialColorG.Value, 
-                                                                                 (float)_materialColorB.Value); 
-                                                                _canvas.QueueDraw();};
-            _materialColorG.ValueChanged += (o, args) => {_figure.SetColor((float)_materialColorR.Value, 
-                                                                                 (float)_materialColorG.Value, 
-                                                                                 (float)_materialColorB.Value); 
-                                                                _canvas.QueueDraw();};
-            _materialColorB.ValueChanged += (o, args) => {_figure.SetColor((float)_materialColorR.Value, 
-                                                                                 (float)_materialColorG.Value, 
-                                                                                 (float)_materialColorB.Value); 
-                                                                _canvas.QueueDraw();};
-            
-            _k_aR.ValueChanged += (o, args) => {_canvas.QueueDraw();};
-            _k_aG.ValueChanged += (o, args) => {_canvas.QueueDraw();};
-            _k_aB.ValueChanged += (o, args) => {_canvas.QueueDraw();};
-            
-            _k_dR.ValueChanged += (o, args) => {_canvas.QueueDraw();};
-            _k_dG.ValueChanged += (o, args) => {_canvas.QueueDraw();};
-            _k_dB.ValueChanged += (o, args) => {_canvas.QueueDraw();};
-            
-            _k_sR.ValueChanged += (o, args) => {_canvas.QueueDraw();};
-            _k_sG.ValueChanged += (o, args) => {_canvas.QueueDraw();};
-            _k_sB.ValueChanged += (o, args) => {_canvas.QueueDraw();};
-            
-            _p.ValueChanged += (o, args) => {_canvas.QueueDraw();};
+            _allowNormals.Toggled += (o, args) =>
+            {
+                CalculateTranformationMatrix();
+                
+            };
+            _allowWireframe.Toggled += (o, args) =>
+            {
+                CalculateTranformationMatrix();
+                
+            };
+            _allowInvisPoly.Toggled += (o, args) =>
+            {
+                CalculateTranformationMatrix();
+                
+            };
+            _allowZBuffer.Toggled += (o, args) =>
+            {
+                CalculateTranformationMatrix();
+                
+            };
 
-            _allowPointLightVisible.Toggled += (o, args) => {_canvas.QueueDraw(); };
+            _projectionMode.Changed += (o, args) =>
+            {
+                SetProjection();
+                CalculateTranformationMatrix();
+                
+            };
 
-            _pointLightIntensityR.ValueChanged += (o, args) => {_pointLight.Intensity.X = (float)_pointLightIntensityR.Value; 
-                                                                      _canvas.QueueDraw();};
-            _pointLightIntensityG.ValueChanged += (o, args) => {_pointLight.Intensity.Y = (float)_pointLightIntensityG.Value; 
-                                                                      _canvas.QueueDraw();};
-            _pointLightIntensityB.ValueChanged += (o, args) => {_pointLight.Intensity.Z = (float)_pointLightIntensityB.Value; 
-                                                                      _canvas.QueueDraw();};
-            
-            _pointLightPositionX.ValueChanged += (o, args) => {_pointLight.Position.X = (float)_pointLightPositionX.Value; 
-                                                                     _canvas.QueueDraw();};
-            _pointLightPositionY.ValueChanged += (o, args) => {_pointLight.Position.Y = (float)_pointLightPositionY.Value; 
-                                                                     _canvas.QueueDraw();};
-            _pointLightPositionZ.ValueChanged += (o, args) => {_pointLight.Position.Z = (float)_pointLightPositionZ.Value; 
-                                                                     _canvas.QueueDraw();};
-            
-            _attenuationСoefficient.ValueChanged += (o, args) => {_canvas.QueueDraw();};
-            
-            _lightingModel.Changed += (o, args) => {_canvas.QueueDraw(); };
-            
+            _a.ValueChanged += (o, args) =>
+            {
+                _figure = new Ellipsoid((float) _a.Value,
+                    (float) _b.Value, (float) _c.Value,
+                    (int) _meridiansCount.Value,
+                    (int) _parallelsCount.Value);
+                _figure.TriangulateSquares();
+                _figure.SetColor((float) _materialColorR.Value,
+                    (float) _materialColorG.Value,
+                    (float) _materialColorB.Value);
+                
+            };
+            _b.ValueChanged += (o, args) =>
+            {
+                _figure = new Ellipsoid((float) _a.Value,
+                    (float) _b.Value, (float) _c.Value,
+                    (int) _meridiansCount.Value,
+                    (int) _parallelsCount.Value);
+                _figure.TriangulateSquares();
+                _figure.SetColor((float) _materialColorR.Value,
+                    (float) _materialColorG.Value,
+                    (float) _materialColorB.Value);
+                
+            };
+            _c.ValueChanged += (o, args) =>
+            {
+                _figure = new Ellipsoid((float) _a.Value,
+                    (float) _b.Value, (float) _c.Value,
+                    (int) _meridiansCount.Value,
+                    (int) _parallelsCount.Value);
+                _figure.TriangulateSquares();
+                _figure.SetColor((float) _materialColorR.Value,
+                    (float) _materialColorG.Value,
+                    (float) _materialColorB.Value);
+                
+            };
+            _meridiansCount.ValueChanged += (o, args) =>
+            {
+                _figure = new Ellipsoid((float) _a.Value,
+                    (float) _b.Value, (float) _c.Value,
+                    (int) _meridiansCount.Value,
+                    (int) _parallelsCount.Value);
+                _figure.TriangulateSquares();
+                _figure.SetColor((float) _materialColorR.Value,
+                    (float) _materialColorG.Value,
+                    (float) _materialColorB.Value);
+                
+            };
+            _parallelsCount.ValueChanged += (o, args) =>
+            {
+                _figure = new Ellipsoid((float) _a.Value,
+                    (float) _b.Value, (float) _c.Value,
+                    (int) _meridiansCount.Value,
+                    (int) _parallelsCount.Value);
+                _figure.TriangulateSquares();
+                _figure.SetColor((float) _materialColorR.Value,
+                    (float) _materialColorG.Value,
+                    (float) _materialColorB.Value);
+                
+            };
+
+            _materialColorR.ValueChanged += (o, args) =>
+            {
+                _figure.SetColor((float) _materialColorR.Value,
+                    (float) _materialColorG.Value,
+                    (float) _materialColorB.Value);
+                
+            };
+            _materialColorG.ValueChanged += (o, args) =>
+            {
+                _figure.SetColor((float) _materialColorR.Value,
+                    (float) _materialColorG.Value,
+                    (float) _materialColorB.Value);
+                
+            };
+            _materialColorB.ValueChanged += (o, args) =>
+            {
+                _figure.SetColor((float) _materialColorR.Value,
+                    (float) _materialColorG.Value,
+                    (float) _materialColorB.Value);
+                
+            };
+
+            _k_aR.ValueChanged += (o, args) => {  };
+            _k_aG.ValueChanged += (o, args) => {  };
+            _k_aB.ValueChanged += (o, args) => {  };
+
+            _k_dR.ValueChanged += (o, args) => {  };
+            _k_dG.ValueChanged += (o, args) => {  };
+            _k_dB.ValueChanged += (o, args) => {  };
+
+            _k_sR.ValueChanged += (o, args) => {  };
+            _k_sG.ValueChanged += (o, args) => {  };
+            _k_sB.ValueChanged += (o, args) => {  };
+
+            _p.ValueChanged += (o, args) => {  };
+
+            _allowPointLightVisible.Toggled += (o, args) => {  };
+
+            _pointLightIntensityR.ValueChanged += (o, args) =>
+            {
+                _pointLight.Intensity.X = (float) _pointLightIntensityR.Value;
+                
+            };
+            _pointLightIntensityG.ValueChanged += (o, args) =>
+            {
+                _pointLight.Intensity.Y = (float) _pointLightIntensityG.Value;
+                
+            };
+            _pointLightIntensityB.ValueChanged += (o, args) =>
+            {
+                _pointLight.Intensity.Z = (float) _pointLightIntensityB.Value;
+                
+            };
+
+            _pointLightPositionX.ValueChanged += (o, args) =>
+            {
+                _pointLight.Position.X = (float) _pointLightPositionX.Value;
+                
+            };
+            _pointLightPositionY.ValueChanged += (o, args) =>
+            {
+                _pointLight.Position.Y = (float) _pointLightPositionY.Value;
+                
+            };
+            _pointLightPositionZ.ValueChanged += (o, args) =>
+            {
+                _pointLight.Position.Z = (float) _pointLightPositionZ.Value;
+                
+            };
+
+            _attenuationСoefficient.ValueChanged += (o, args) => {  };
+
+            _lightingModel.Changed += (o, args) => {  };
+
             #endregion
 
             #region Обработка матрицы
 
-            _m11.ValueChanged += (o, args) => { _transformationMatrix.M11 = (float)_m11.Value; _canvas.QueueDraw();};
-            _m12.ValueChanged += (o, args) => { _transformationMatrix.M12 = (float)_m12.Value; _canvas.QueueDraw();};
-            _m13.ValueChanged += (o, args) => { _transformationMatrix.M13 = (float)_m13.Value; _canvas.QueueDraw();};
-            _m14.ValueChanged += (o, args) => { _transformationMatrix.M14 = (float)_m14.Value; _canvas.QueueDraw();};
-            _m21.ValueChanged += (o, args) => { _transformationMatrix.M21 = (float)_m21.Value; _canvas.QueueDraw();};
-            _m22.ValueChanged += (o, args) => { _transformationMatrix.M22 = (float)_m22.Value; _canvas.QueueDraw();};
-            _m23.ValueChanged += (o, args) => { _transformationMatrix.M23 = (float)_m23.Value; _canvas.QueueDraw();};
-            _m24.ValueChanged += (o, args) => { _transformationMatrix.M24 = (float)_m24.Value; _canvas.QueueDraw();};
-            _m31.ValueChanged += (o, args) => { _transformationMatrix.M31 = (float)_m31.Value; _canvas.QueueDraw();};
-            _m32.ValueChanged += (o, args) => { _transformationMatrix.M32 = (float)_m32.Value; _canvas.QueueDraw();};
-            _m33.ValueChanged += (o, args) => { _transformationMatrix.M33 = (float)_m33.Value; _canvas.QueueDraw();};
-            _m34.ValueChanged += (o, args) => { _transformationMatrix.M34 = (float)_m34.Value; _canvas.QueueDraw();};
-            _m41.ValueChanged += (o, args) => { _transformationMatrix.M41 = (float)_m41.Value; _canvas.QueueDraw();};
-            _m42.ValueChanged += (o, args) => { _transformationMatrix.M42 = (float)_m42.Value; _canvas.QueueDraw();};
-            _m43.ValueChanged += (o, args) => { _transformationMatrix.M43 = (float)_m43.Value; _canvas.QueueDraw();};
-            _m44.ValueChanged += (o, args) => { _transformationMatrix.M44 = (float)_m44.Value; _canvas.QueueDraw();};
+            _m11.ValueChanged += (o, args) =>
+            {
+                _transformationMatrix.M11 = (float) _m11.Value;
+                
+            };
+            _m12.ValueChanged += (o, args) =>
+            {
+                _transformationMatrix.M12 = (float) _m12.Value;
+                
+            };
+            _m13.ValueChanged += (o, args) =>
+            {
+                _transformationMatrix.M13 = (float) _m13.Value;
+                
+            };
+            _m14.ValueChanged += (o, args) =>
+            {
+                _transformationMatrix.M14 = (float) _m14.Value;
+                
+            };
+            _m21.ValueChanged += (o, args) =>
+            {
+                _transformationMatrix.M21 = (float) _m21.Value;
+                
+            };
+            _m22.ValueChanged += (o, args) =>
+            {
+                _transformationMatrix.M22 = (float) _m22.Value;
+                
+            };
+            _m23.ValueChanged += (o, args) =>
+            {
+                _transformationMatrix.M23 = (float) _m23.Value;
+                
+            };
+            _m24.ValueChanged += (o, args) =>
+            {
+                _transformationMatrix.M24 = (float) _m24.Value;
+                
+            };
+            _m31.ValueChanged += (o, args) =>
+            {
+                _transformationMatrix.M31 = (float) _m31.Value;
+                
+            };
+            _m32.ValueChanged += (o, args) =>
+            {
+                _transformationMatrix.M32 = (float) _m32.Value;
+                
+            };
+            _m33.ValueChanged += (o, args) =>
+            {
+                _transformationMatrix.M33 = (float) _m33.Value;
+                
+            };
+            _m34.ValueChanged += (o, args) =>
+            {
+                _transformationMatrix.M34 = (float) _m34.Value;
+                
+            };
+            _m41.ValueChanged += (o, args) =>
+            {
+                _transformationMatrix.M41 = (float) _m41.Value;
+                
+            };
+            _m42.ValueChanged += (o, args) =>
+            {
+                _transformationMatrix.M42 = (float) _m42.Value;
+                
+            };
+            _m43.ValueChanged += (o, args) =>
+            {
+                _transformationMatrix.M43 = (float) _m43.Value;
+                
+            };
+            _m44.ValueChanged += (o, args) =>
+            {
+                _transformationMatrix.M44 = (float) _m44.Value;
+                
+            };
 
             #endregion
 
             #region Обработка мыши
 
-            _canvas.Events |= EventMask.ScrollMask | EventMask.PointerMotionMask | EventMask.ButtonPressMask |
+            _glArea.Events |= EventMask.ScrollMask | EventMask.PointerMotionMask | EventMask.ButtonPressMask |
                               EventMask.ButtonReleaseMask;
-            
-            _canvas.ButtonPressEvent += (o, args) =>
+
+            _glArea.ButtonPressEvent += (o, args) =>
             {
                 _mousePressedButton = args.Event.Button;
-                _mousePosition.X = (float)args.Event.X;
-                _mousePosition.Y = (float)args.Event.Y;
+                _mousePosition.X = (float) args.Event.X;
+                _mousePosition.Y = (float) args.Event.Y;
             };
 
-            _canvas.MotionNotifyEvent += (o, args) =>
+            _glArea.MotionNotifyEvent += (o, args) =>
             {
-                Vector3 _currentMousePosition = new Vector3((float)args.Event.X, (float)args.Event.Y, 0);
-                
+                Vector3 _currentMousePosition = new Vector3((float) args.Event.X, (float) args.Event.Y, 0);
+
                 if (_mousePressedButton == 1)
                 {
-                    _xShift.Value += (double)(_currentMousePosition.X - _mousePosition.X) / (double)_defaultTransformationMatrix.M11;
-                    _yShift.Value += (double)(_currentMousePosition.Y - _mousePosition.Y) / (double)_defaultTransformationMatrix.M22;
+                    _xShift.Value += (double) (_currentMousePosition.X - _mousePosition.X) /
+                                     (double) _defaultTransformationMatrix.M11;
+                    _yShift.Value += (double) (_currentMousePosition.Y - _mousePosition.Y) /
+                                     (double) _defaultTransformationMatrix.M22;
                 }
+
                 if (_mousePressedButton == 3)
                 {
-                    Matrix4x4 mouseRotation = Matrix4x4.CreateRotationX(-(_currentMousePosition.Y - _mousePosition.Y) * _mouseRotationSensitivity);
-                    mouseRotation *= Matrix4x4.CreateRotationY((_currentMousePosition.X - _mousePosition.X) * _mouseRotationSensitivity);
-                    
-                    Matrix4x4 currnetRotation = Matrix4x4.CreateRotationX((float)(_xRotation.Value * Math.PI / 180)) *
-                                  Matrix4x4.CreateRotationY((float)(_yRotation.Value * Math.PI / 180)) *
-                                  Matrix4x4.CreateRotationZ((float)(_zRotation.Value * Math.PI / 180)) * 
-                                  mouseRotation;
-                    
+                    Matrix4x4 mouseRotation =
+                        Matrix4x4.CreateRotationX(-(_currentMousePosition.Y - _mousePosition.Y) *
+                                                  _mouseRotationSensitivity);
+                    mouseRotation *=
+                        Matrix4x4.CreateRotationY((_currentMousePosition.X - _mousePosition.X) *
+                                                  _mouseRotationSensitivity);
+
+                    Matrix4x4 currnetRotation = Matrix4x4.CreateRotationX((float) (_xRotation.Value * Math.PI / 180)) *
+                                                Matrix4x4.CreateRotationY((float) (_yRotation.Value * Math.PI / 180)) *
+                                                Matrix4x4.CreateRotationZ((float) (_zRotation.Value * Math.PI / 180)) *
+                                                mouseRotation;
+
                     //для углов Эйлера
                     MatrixToAngles(currnetRotation, out var x, out var y, out var z);
                     _xRotation.Value = x;
                     _yRotation.Value = y;
                     _zRotation.Value = z;
                 }
+
                 _mousePosition = _currentMousePosition;
             };
-            
-            _canvas.ButtonReleaseEvent += (o, args) => _mousePressedButton = 0;
-            
-            _canvas.ScrollEvent += (o, args) =>
+
+            _glArea.ButtonReleaseEvent += (o, args) => _mousePressedButton = 0;
+
+            _glArea.ScrollEvent += (o, args) =>
             {
                 if (args.Event.Direction == ScrollDirection.Down)
                 {
@@ -401,7 +548,8 @@ namespace CG
                     _yScale.Value += _yScale.StepIncrement;
                     _zScale.Value += _zScale.StepIncrement;
                 }
-                _canvas.QueueDraw();
+
+                
             };
 
             #endregion
@@ -411,9 +559,9 @@ namespace CG
         {
             Application.Quit();
         }
-        
+
         #region Отрисовка фигруы
-        
+
         private void DrawPolygon(Context context, Polygon polygon)
         {
             if (polygon.Vertexes.Count == 0)
@@ -422,11 +570,12 @@ namespace CG
                 return;
 
             context.MoveTo(polygon.Vertexes[0].Point.X, polygon.Vertexes[0].Point.Y);
-            
+
             for (int i = 1; i < polygon.Vertexes.Count; ++i)
             {
                 context.LineTo(polygon.Vertexes[i].Point.X, polygon.Vertexes[i].Point.Y);
             }
+
             context.ClosePath();
 
             if (_allowWireframe.Active)
@@ -437,9 +586,9 @@ namespace CG
             else
             {
                 //фоновая составляющая
-                Vector3 I_a = new Vector3((float)_k_aR.Value,
-                                          (float)_k_aG.Value,
-                                          (float)_k_aB.Value);
+                Vector3 I_a = new Vector3((float) _k_aR.Value,
+                    (float) _k_aG.Value,
+                    (float) _k_aB.Value);
 
                 if (_lightingModel.Active == (int) Shading.Flat)
                 {
@@ -448,12 +597,13 @@ namespace CG
                     Vector4 N = polygon.CalculateNormal();
                     float cosLN = (float) (Vector4.Dot(L, N) / (L.Length() * N.Length()));
                     Vector3 I_d = new Vector3((float) (_k_dR.Value * _pointLightIntensityR.Value * Math.Max(0, cosLN)),
-                                              (float) (_k_dG.Value * _pointLightIntensityG.Value * Math.Max(0, cosLN)),
-                                              (float) (_k_dB.Value * _pointLightIntensityB.Value * Math.Max(0, cosLN)));
-                    
+                        (float) (_k_dG.Value * _pointLightIntensityG.Value * Math.Max(0, cosLN)),
+                        (float) (_k_dB.Value * _pointLightIntensityB.Value * Math.Max(0, cosLN)));
+
                     // все в преобразованном базисе. поэтому надо поделить на _defaultScale
-                    I_d /= (float)(Math.Pow(L.Length(), 2) * (_attenuationСoefficient.Value / Math.Pow(_defaultScale, 2)));
-                    
+                    I_d /= (float) (Math.Pow(L.Length(), 2) *
+                                    (_attenuationСoefficient.Value / Math.Pow(_defaultScale, 2)));
+
                     //отраженная составляющая
                     Vector3 I_s;
                     if (cosLN > 0)
@@ -463,12 +613,13 @@ namespace CG
                         Vector4 R = ((cosLN * N) - normalizedL) + N * cosLN; //отраженный от порехности вектор
                         Vector4 S = new Vector4(0, 0, 1, 0);
 
-                        float cosRSp = (float) Math.Pow(Math.Max(0, (float) (Vector4.Dot(R, S) / (R.Length() * S.Length()))),
-                                                        _p.Value);
+                        float cosRSp = (float) Math.Pow(
+                            Math.Max(0, (float) (Vector4.Dot(R, S) / (R.Length() * S.Length()))),
+                            _p.Value);
 
                         I_s = new Vector3((float) (_k_sR.Value * _pointLightIntensityR.Value * cosRSp),
-                                          (float) (_k_sG.Value * _pointLightIntensityG.Value * cosRSp),
-                                          (float) (_k_sB.Value * _pointLightIntensityB.Value * cosRSp));
+                            (float) (_k_sG.Value * _pointLightIntensityG.Value * cosRSp),
+                            (float) (_k_sB.Value * _pointLightIntensityB.Value * cosRSp));
                         // отражение не должно затухать от расстояния, кажется
                         // I_s /= (float)(Math.Pow(L.Length(), 2) * (_attenuationСoefficient.Value / Math.Pow(_defaultScale, 2)));
                     }
@@ -477,25 +628,28 @@ namespace CG
                     Vector3 polygonTrueColor = (I_a + I_d + I_s) * polygon.Color;
 
                     context.SetSourceRGB(polygonTrueColor.X,
-                                         polygonTrueColor.Y,
-                                         polygonTrueColor.Z);
+                        polygonTrueColor.Y,
+                        polygonTrueColor.Z);
 
                     context.Fill();
-                } else if (_lightingModel.Active == (int) Shading.Gouraud)
+                }
+                else if (_lightingModel.Active == (int) Shading.Gouraud)
                 {
                     List<Vector3> vertexesTrueColor = new List<Vector3>();
-                    
+
                     foreach (Vertex vertex in polygon.Vertexes)
                     {
                         //рассеяная составляющая
                         Vector4 L = _pointLight.TransformedPosition - vertex.Point;
                         Vector4 N = vertex.CalculateNormal();
                         float cosLN = (float) (Vector4.Dot(L, N) / (L.Length() * N.Length()));
-                        Vector3 I_d = new Vector3((float) (_k_dR.Value * _pointLightIntensityR.Value * Math.Max(0, cosLN)),
-                                                  (float) (_k_dG.Value * _pointLightIntensityG.Value * Math.Max(0, cosLN)),
-                                                  (float) (_k_dB.Value * _pointLightIntensityB.Value * Math.Max(0, cosLN)));
-                        I_d /= (float)(Math.Pow(L.Length(), 2) * (_attenuationСoefficient.Value / Math.Pow(_defaultScale, 2)));
-                        
+                        Vector3 I_d = new Vector3(
+                            (float) (_k_dR.Value * _pointLightIntensityR.Value * Math.Max(0, cosLN)),
+                            (float) (_k_dG.Value * _pointLightIntensityG.Value * Math.Max(0, cosLN)),
+                            (float) (_k_dB.Value * _pointLightIntensityB.Value * Math.Max(0, cosLN)));
+                        I_d /= (float) (Math.Pow(L.Length(), 2) *
+                                        (_attenuationСoefficient.Value / Math.Pow(_defaultScale, 2)));
+
                         //отраженная составляющая
                         Vector3 I_s;
                         if (cosLN > 0)
@@ -505,23 +659,25 @@ namespace CG
                             Vector4 R = ((cosLN * N) - normalizedL) + N * cosLN; //отраженный от порехности вектор
                             Vector4 S = new Vector4(0, 0, 1, 0);
 
-                            float cosRSp = (float) Math.Pow(Math.Max(0, (float) (Vector4.Dot(R, S) / (R.Length() * S.Length()))),
+                            float cosRSp = (float) Math.Pow(
+                                Math.Max(0, (float) (Vector4.Dot(R, S) / (R.Length() * S.Length()))),
                                 _p.Value);
                             I_s = new Vector3((float) (_k_sR.Value * _pointLightIntensityR.Value * cosRSp),
-                                              (float) (_k_sG.Value * _pointLightIntensityG.Value * cosRSp),
-                                              (float) (_k_sB.Value * _pointLightIntensityB.Value * cosRSp));
+                                (float) (_k_sG.Value * _pointLightIntensityG.Value * cosRSp),
+                                (float) (_k_sB.Value * _pointLightIntensityB.Value * cosRSp));
                             // отражение не должно затухать от расстояния, кажется
                             // I_s /= (float)(Math.Pow(L.Length(), 2) * (_attenuationСoefficient.Value / Math.Pow(_defaultScale, 2)));
                         }
                         else I_s = Vector3.Zero;
-                        
+
                         vertexesTrueColor.Add((I_a + I_d + I_s) * vertex.Color);
                     }
-                    
+
                     //заливка работает только для треугольников!!!
-                    _surface.DrawTriangle(vertexesTrueColor[0],  new Vector2(polygon.Vertexes[0].Point.X, polygon.Vertexes[0].Point.Y), 
-                                          vertexesTrueColor[1], new Vector2(polygon.Vertexes[1].Point.X, polygon.Vertexes[1].Point.Y), 
-                                          vertexesTrueColor[2], new Vector2(polygon.Vertexes[2].Point.X, polygon.Vertexes[2].Point.Y));
+                    _surface.DrawTriangle(vertexesTrueColor[0],
+                        new Vector2(polygon.Vertexes[0].Point.X, polygon.Vertexes[0].Point.Y),
+                        vertexesTrueColor[1], new Vector2(polygon.Vertexes[1].Point.X, polygon.Vertexes[1].Point.Y),
+                        vertexesTrueColor[2], new Vector2(polygon.Vertexes[2].Point.X, polygon.Vertexes[2].Point.Y));
                 }
             }
         }
@@ -529,23 +685,23 @@ namespace CG
         private void DrawMesh(Context context, Mesh mesh)
         {
             if (_lightingModel.Active == (int) Shading.Gouraud)
-                _surface.BeginUpdate(context); 
-            
+                _surface.BeginUpdate(context);
+
             if (_allowZBuffer.Active)
             {
                 mesh.TransformedPolygons = mesh.TransformedPolygons
                     .OrderBy(polygon => (polygon.Vertexes.Select(vertex => vertex.Point.Z)).Max()).ToList();
             }
-            
+
             for (int i = 0; i < mesh.TransformedPolygons.Count; ++i)
             {
                 DrawPolygon(context, mesh.TransformedPolygons[i]);
             }
-            
+
             if (_lightingModel.Active == (int) Shading.Gouraud)
                 _surface.EndUpdate();
-            
-            
+
+
             Matrix4x4 inverseMatrix = new Matrix4x4();
             Vector4 mouseShift = new Vector4(1, 1, 1, 0);
             Matrix4x4.Invert(_transformationMatrix * _defaultTransformationMatrix, out inverseMatrix);
@@ -553,23 +709,25 @@ namespace CG
 
         private void DrawNormal(Context context, Polygon polygon)
         {
-            Vector4 normal = Vector4.Transform(polygon.CalculateNormal(), _transformationMatrix * _defaultTransformationMatrix);
+            Vector4 normal = Vector4.Transform(polygon.CalculateNormal(),
+                _transformationMatrix * _defaultTransformationMatrix);
             normal /= normal.Length();
             normal *= 50;
-            
+
             if (_allowInvisPoly.Active && normal.Z < 0)
                 return;
-            
-            Vector4 polygonCenter = Vector4.Transform(polygon.CalculateCenter(), _transformationMatrix * _defaultTransformationMatrix);
-            
+
+            Vector4 polygonCenter = Vector4.Transform(polygon.CalculateCenter(),
+                _transformationMatrix * _defaultTransformationMatrix);
+
             context.MoveTo(polygonCenter.X, polygonCenter.Y);
             context.LineTo(polygonCenter.X + normal.X, polygonCenter.Y + normal.Y);
-            
+
             context.SetSourceRGB(0, 1, 1);
             context.Stroke();
 
             #region отладочная отрисовка для отраженной составляющей
-            
+
             // Vector4 L = _pointLight.Position - polygon.CalculateCenter();
             // L = Vector4.Transform(L, _transformationMatrix * _defaultTransformationMatrix);
             // L /= L.Length();
@@ -591,10 +749,10 @@ namespace CG
             //
             // context.SetSourceRGB(1, 0, 0);
             // context.Stroke();
-            
+
             #endregion
         }
-        
+
         private void DrawNormals(Context context, Mesh mesh)
         {
             foreach (var polygon in mesh.Polygons)
@@ -606,20 +764,20 @@ namespace CG
         private void DrawAxis(Context context)
         {
             Vector4 o = Vector4.Transform(new Vector4(1, 1, 1, 1), _axisTransformMatrix);
-            Vector4 x = Vector4.Transform( new Vector4(_axisSize, 1, 1, 1), _axisTransformMatrix);
-            Vector4 y = Vector4.Transform( new Vector4(1, _axisSize, 1, 1), _axisTransformMatrix);
-            Vector4 z = Vector4.Transform( new Vector4(1, 1, _axisSize, 1), _axisTransformMatrix);
+            Vector4 x = Vector4.Transform(new Vector4(_axisSize, 1, 1, 1), _axisTransformMatrix);
+            Vector4 y = Vector4.Transform(new Vector4(1, _axisSize, 1, 1), _axisTransformMatrix);
+            Vector4 z = Vector4.Transform(new Vector4(1, 1, _axisSize, 1), _axisTransformMatrix);
 
             context.MoveTo(o.X, o.Y);
             context.LineTo(x.X, x.Y);
             context.SetSourceRGB(1, .0, .0);
             context.Stroke();
-            
+
             context.MoveTo(o.X, o.Y);
             context.LineTo(y.X, y.Y);
             context.SetSourceRGB(0, 1, .0);
             context.Stroke();
-            
+
             context.MoveTo(o.X, o.Y);
             context.LineTo(z.X, z.Y);
             context.SetSourceRGB(.0, .0, 1);
@@ -628,12 +786,14 @@ namespace CG
 
         private void DrawPointLight(Context context, PointLight pointLight)
         {
-            Cairo.Gradient radialGradient = new RadialGradient(pointLight.TransformedPosition.X, 
-                                                       pointLight.TransformedPosition.Y, 
-                                                       0, 
-                                                       pointLight.TransformedPosition.X, 
-                                                       pointLight.TransformedPosition.Y, 50);
-            radialGradient.AddColorStop(0, new Cairo.Color( _pointLightIntensityR.Value, _pointLightIntensityG.Value, _pointLightIntensityB.Value, 1));
+            Cairo.Gradient radialGradient = new RadialGradient(pointLight.TransformedPosition.X,
+                pointLight.TransformedPosition.Y,
+                0,
+                pointLight.TransformedPosition.X,
+                pointLight.TransformedPosition.Y, 50);
+            radialGradient.AddColorStop(0,
+                new Cairo.Color(_pointLightIntensityR.Value, _pointLightIntensityG.Value, _pointLightIntensityB.Value,
+                    1));
             radialGradient.AddColorStop(1, new Cairo.Color(0, 0, 0, 0));
 
 
@@ -641,17 +801,19 @@ namespace CG
             context.SetSource(radialGradient);
             context.Fill();
         }
-        
+
         #endregion
 
         private void CalculateTranformationMatrix()
         {
-            _transformationMatrix = Matrix4x4.CreateScale((float) _xScale.Value, (float) _yScale.Value, (float) _zScale.Value);
-            _transformationMatrix *= Matrix4x4.CreateRotationX((float)(_xRotation.Value * Math.PI / 180)) *
-                                     Matrix4x4.CreateRotationY((float)(_yRotation.Value * Math.PI / 180)) *
-                                     Matrix4x4.CreateRotationZ((float)(_zRotation.Value * Math.PI / 180));
+            _transformationMatrix =
+                Matrix4x4.CreateScale((float) _xScale.Value, (float) _yScale.Value, (float) _zScale.Value);
+            _transformationMatrix *= Matrix4x4.CreateRotationX((float) (_xRotation.Value * Math.PI / 180)) *
+                                     Matrix4x4.CreateRotationY((float) (_yRotation.Value * Math.PI / 180)) *
+                                     Matrix4x4.CreateRotationZ((float) (_zRotation.Value * Math.PI / 180));
 
-            _transformationMatrix *= Matrix4x4.CreateTranslation((float)_xShift.Value, (float)_yShift.Value, (float)_zShift.Value);
+            _transformationMatrix *=
+                Matrix4x4.CreateTranslation((float) _xShift.Value, (float) _yShift.Value, (float) _zShift.Value);
 
             #region Обновление спинбатоннов для матрицы
 
@@ -671,10 +833,10 @@ namespace CG
             _m42.Value = _transformationMatrix.M42;
             _m43.Value = _transformationMatrix.M43;
             _m44.Value = _transformationMatrix.M44;
-            
+
             #endregion
         }
-        
+
         private static void MatrixToAngles(Matrix4x4 matrix, out double x, out double y, out double z)
         {
             //область определения аркстангенса от pi/2 до -pi/2
@@ -693,7 +855,7 @@ namespace CG
 
         private void SetProjection()
         {
-            if (_projectionMode.Active == (int)Projection.Isometric)
+            if (_projectionMode.Active == (int) Projection.Isometric)
             {
                 _xScale.Value = 1;
                 _yScale.Value = 1;
@@ -727,6 +889,86 @@ namespace CG
                 _xRotation.Value = 0;
                 _yRotation.Value = 0;
             }
+        }
+
+        private void GLInit(object sender, EventArgs args)
+        {
+            
+            var glArea = sender as GLArea;
+            var gl = new OpenGL();
+            glArea.MakeCurrent();
+
+            #region сборка шейдоров и шейдерной программы
+
+            uint vertexShader;
+            vertexShader = gl.CreateShader(OpenGL.GL_VERTEX_SHADER);
+            string vertexShaderSource = File.ReadAllText(@"C:\Users\prota\Desktop\CGLabs\CGLab4\shader.vert", Encoding.UTF8);
+            gl.ShaderSource(vertexShader, vertexShaderSource);
+            gl.CompileShader(vertexShader);
+            
+            //TODO добавить вывод ошибок компиляции
+            
+            uint fragmentShader;
+            fragmentShader = gl.CreateShader(OpenGL.GL_FRAGMENT_SHADER);
+            string fragmentShaderSource = File.ReadAllText(@"C:\Users\prota\Desktop\CGLabs\CGLab4\shader.frag", Encoding.UTF8);
+            gl.ShaderSource(fragmentShader, fragmentShaderSource);
+            gl.CompileShader(fragmentShader);
+            
+            uint shaderProgram;
+            shaderProgram = gl.CreateProgram();
+            
+            gl.AttachShader(shaderProgram, vertexShader);
+            gl.AttachShader(shaderProgram, fragmentShader);
+            gl.LinkProgram(shaderProgram);
+            
+            //TODO добавить вывод ошибок компиляции
+
+            gl.DeleteShader(vertexShader);
+            gl.DeleteShader(fragmentShader);
+            
+            #endregion
+
+            float[] vertices = {
+                -0.5f, -0.5f, 0.0f,
+                0.5f, -0.5f, 0.0f,
+                0.0f,  0.5f, 0.0f
+            };
+            
+            // создать объект вершинного массива
+            uint[] arrays = new uint[1];
+            gl.GenVertexArrays(1, arrays);
+            uint VAO = arrays[0];
+            // создать буффер вершин
+            uint[] buffers = new uint[1];
+            gl.GenBuffers(1, buffers);
+            uint VBO = buffers[0];
+
+            gl.BindVertexArray(VAO);
+            //загрузить данные в буфер
+            gl.BindBuffer(OpenGL.GL_ARRAY_BUFFER, VBO);
+
+            var size = vertices.Length * sizeof(float);
+            gl.BufferData(OpenGL.GL_ARRAY_BUFFER, vertices, OpenGL.GL_STATIC_DRAW); //????
+
+            gl.VertexAttribPointer(0, 3, OpenGL.GL_FLOAT, false, 3 * sizeof(float), IntPtr.Zero);
+            gl.EnableVertexAttribArray(0);
+
+            gl.BindVertexArray(0);
+            
+            glArea.Render += (o, args) =>
+            {
+                gl.UseProgram(shaderProgram);
+                gl.Clear(OpenGL.GL_COLOR_BUFFER_BIT | OpenGL.GL_DEPTH_BUFFER_BIT);
+                gl.BindVertexArray(VAO);
+                gl.DrawArrays(OpenGL.GL_TRIANGLES, 0, 3);
+                gl.BindVertexArray(0);
+            };
+            
+            glArea.Unrealized += (_, _) => {
+                // gl.DeleteBuffers(buffers.Length, buffers);
+                // gl.DeleteVertexArrays(arrays.Length, arrays);
+                // gl.DeleteProgram(shaderProgram);
+            };
         }
     }
 }

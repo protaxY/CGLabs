@@ -1,11 +1,6 @@
-﻿using System;
-using System.Numerics;
+﻿using System.Numerics;
 using System.Collections.Generic;
-using System.Drawing;
 using System.Linq;
-using GLib;
-
-using Gtk;
 
 namespace CG
 {
