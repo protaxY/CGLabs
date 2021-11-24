@@ -146,7 +146,7 @@ namespace CG
 
         #region выстраиваивание сцены
 
-        private Camera _camera = new Camera(new Vector3(0, 3, 0), new Vector3(0, 0, 0), 
+        private Camera _camera = new Camera(new Vector3(0, 0, 3), new Vector3(0, 0, 0), 
             1, 60, (float)0.01, (float)1000);
         private Mesh _figure = new Ellipsoid(1, 1, 1, 16, 8);
         private PointLight _pointLight = new PointLight(3, 0, 0, 1, 1, 1);
