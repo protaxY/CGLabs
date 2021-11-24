@@ -2,9 +2,22 @@
 <!-- Generated with glade 3.22.2 -->
 <interface>
   <requires lib="gtk+" version="3.20"/>
+  <object class="GtkAdjustment" id="_FOV">
+    <property name="upper">180</property>
+    <property name="value">60</property>
+    <property name="step_increment">1</property>
+    <property name="page_increment">10</property>
+  </object>
   <object class="GtkAdjustment" id="_a">
     <property name="lower">-100</property>
     <property name="upper">100</property>
+    <property name="value">1</property>
+    <property name="step_increment">0.10000000000000001</property>
+    <property name="page_increment">0.10000000000000001</property>
+  </object>
+  <object class="GtkAdjustment" id="_aspectRatio">
+    <property name="lower">0.01</property>
+    <property name="upper">1000</property>
     <property name="value">1</property>
     <property name="step_increment">0.10000000000000001</property>
     <property name="page_increment">0.10000000000000001</property>
@@ -29,6 +42,19 @@
     <property name="value">1</property>
     <property name="step_increment">0.10000000000000001</property>
     <property name="page_increment">0.10000000000000001</property>
+  </object>
+  <object class="GtkAdjustment" id="_clipEnd">
+    <property name="lower">0.01</property>
+    <property name="upper">10000</property>
+    <property name="value">100</property>
+    <property name="step_increment">1</property>
+    <property name="page_increment">1</property>
+  </object>
+  <object class="GtkAdjustment" id="_clipStart">
+    <property name="upper">10000</property>
+    <property name="value">0.01</property>
+    <property name="step_increment">1</property>
+    <property name="page_increment">1</property>
   </object>
   <object class="GtkAdjustment" id="_k_aB">
     <property name="upper">1</property>
@@ -253,20 +279,19 @@
     <property name="step_increment">0.10000000000000001</property>
     <property name="page_increment">10</property>
   </object>
+  <object class="GtkAdjustment" id="_xPosition">
+    <property name="lower">-1000</property>
+    <property name="upper">1000</property>
+    <property name="step_increment">0.10000000000000001</property>
+    <property name="page_increment">10</property>
+  </object>
   <object class="GtkAdjustment" id="_xRotation">
     <property name="lower">-180</property>
     <property name="upper">180</property>
     <property name="step_increment">10</property>
     <property name="page_increment">10</property>
   </object>
-  <object class="GtkAdjustment" id="_xScale">
-    <property name="lower">-1000</property>
-    <property name="upper">1000</property>
-    <property name="value">1</property>
-    <property name="step_increment">0.10000000000000001</property>
-    <property name="page_increment">10</property>
-  </object>
-  <object class="GtkAdjustment" id="_xShift">
+  <object class="GtkAdjustment" id="_yPosition">
     <property name="lower">-1000</property>
     <property name="upper">1000</property>
     <property name="step_increment">0.10000000000000001</property>
@@ -278,14 +303,7 @@
     <property name="step_increment">10</property>
     <property name="page_increment">10</property>
   </object>
-  <object class="GtkAdjustment" id="_yScale">
-    <property name="lower">-1000</property>
-    <property name="upper">1000</property>
-    <property name="value">1</property>
-    <property name="step_increment">0.10000000000000001</property>
-    <property name="page_increment">10</property>
-  </object>
-  <object class="GtkAdjustment" id="_yShift">
+  <object class="GtkAdjustment" id="_zPosition">
     <property name="lower">-1000</property>
     <property name="upper">1000</property>
     <property name="step_increment">0.10000000000000001</property>
@@ -295,19 +313,6 @@
     <property name="lower">-180</property>
     <property name="upper">180</property>
     <property name="step_increment">10</property>
-    <property name="page_increment">10</property>
-  </object>
-  <object class="GtkAdjustment" id="_zScale">
-    <property name="lower">-1000</property>
-    <property name="upper">1000</property>
-    <property name="value">1</property>
-    <property name="step_increment">0.10000000000000001</property>
-    <property name="page_increment">10</property>
-  </object>
-  <object class="GtkAdjustment" id="_zShift">
-    <property name="lower">-1000</property>
-    <property name="upper">1000</property>
-    <property name="step_increment">0.10000000000000001</property>
     <property name="page_increment">10</property>
   </object>
   <object class="GtkWindow" id="MainWindow">
@@ -330,7 +335,6 @@
             <property name="has_alpha">True</property>
             <property name="has_depth_buffer">True</property>
             <property name="has_stencil_buffer">True</property>
-            <property name="use_es">True</property>
           </object>
           <packing>
             <property name="expand">True</property>
@@ -353,14 +357,14 @@
                     <property name="can_focus">False</property>
                     <property name="orientation">vertical</property>
                     <child>
-                      <object class="GtkBox" id="scale">
+                      <object class="GtkBox" id="translation2">
                         <property name="visible">True</property>
                         <property name="can_focus">False</property>
                         <child>
                           <object class="GtkLabel">
                             <property name="visible">True</property>
                             <property name="can_focus">False</property>
-                            <property name="label" translatable="yes">Масштаб (колесико мыши)</property>
+                            <property name="label" translatable="yes">Положение</property>
                           </object>
                           <packing>
                             <property name="expand">False</property>
@@ -373,10 +377,9 @@
                             <property name="visible">True</property>
                             <property name="can_focus">True</property>
                             <property name="width_chars">6</property>
-                            <property name="text" translatable="yes">1.000</property>
-                            <property name="adjustment">_zScale</property>
+                            <property name="text" translatable="yes">0.000</property>
+                            <property name="adjustment">_zPosition</property>
                             <property name="digits">3</property>
-                            <property name="value">1</property>
                           </object>
                           <packing>
                             <property name="expand">False</property>
@@ -403,10 +406,9 @@
                             <property name="visible">True</property>
                             <property name="can_focus">True</property>
                             <property name="width_chars">6</property>
-                            <property name="text" translatable="yes">1.000</property>
-                            <property name="adjustment">_yScale</property>
+                            <property name="text" translatable="yes">0.000</property>
+                            <property name="adjustment">_yPosition</property>
                             <property name="digits">3</property>
-                            <property name="value">1</property>
                           </object>
                           <packing>
                             <property name="expand">False</property>
@@ -433,10 +435,9 @@
                             <property name="visible">True</property>
                             <property name="can_focus">True</property>
                             <property name="width_chars">6</property>
-                            <property name="text" translatable="yes">1.000</property>
-                            <property name="adjustment">_xScale</property>
+                            <property name="text" translatable="yes">0.000</property>
+                            <property name="adjustment">_xPosition</property>
                             <property name="digits">3</property>
-                            <property name="value">1</property>
                           </object>
                           <packing>
                             <property name="expand">False</property>
@@ -461,19 +462,19 @@
                       </object>
                       <packing>
                         <property name="expand">False</property>
-                        <property name="fill">True</property>
+                        <property name="fill">False</property>
                         <property name="position">0</property>
                       </packing>
                     </child>
                     <child>
-                      <object class="GtkBox" id="rotation">
+                      <object class="GtkBox" id="rotation1">
                         <property name="visible">True</property>
                         <property name="can_focus">False</property>
                         <child>
                           <object class="GtkLabel">
                             <property name="visible">True</property>
                             <property name="can_focus">False</property>
-                            <property name="label" translatable="yes">Поворот (ПКМ)</property>
+                            <property name="label" translatable="yes">Поворот</property>
                           </object>
                           <packing>
                             <property name="expand">False</property>
@@ -576,14 +577,14 @@
                       </packing>
                     </child>
                     <child>
-                      <object class="GtkBox" id="translation">
+                      <object class="GtkBox" id="translation7">
                         <property name="visible">True</property>
                         <property name="can_focus">False</property>
                         <child>
                           <object class="GtkLabel">
                             <property name="visible">True</property>
                             <property name="can_focus">False</property>
-                            <property name="label" translatable="yes">Смещение (ЛКМ)</property>
+                            <property name="label" translatable="yes">Соотношение сторон</property>
                           </object>
                           <packing>
                             <property name="expand">False</property>
@@ -597,8 +598,9 @@
                             <property name="can_focus">True</property>
                             <property name="width_chars">6</property>
                             <property name="text" translatable="yes">0.000</property>
-                            <property name="adjustment">_zShift</property>
+                            <property name="adjustment">_aspectRatio</property>
                             <property name="digits">3</property>
+                            <property name="value">1</property>
                           </object>
                           <packing>
                             <property name="expand">False</property>
@@ -607,17 +609,27 @@
                             <property name="position">1</property>
                           </packing>
                         </child>
+                      </object>
+                      <packing>
+                        <property name="expand">False</property>
+                        <property name="fill">False</property>
+                        <property name="position">3</property>
+                      </packing>
+                    </child>
+                    <child>
+                      <object class="GtkBox" id="translation3">
+                        <property name="visible">True</property>
+                        <property name="can_focus">False</property>
                         <child>
                           <object class="GtkLabel">
                             <property name="visible">True</property>
                             <property name="can_focus">False</property>
-                            <property name="label" translatable="yes">Z</property>
+                            <property name="label" translatable="yes">FOV</property>
                           </object>
                           <packing>
                             <property name="expand">False</property>
                             <property name="fill">True</property>
-                            <property name="pack_type">end</property>
-                            <property name="position">2</property>
+                            <property name="position">0</property>
                           </packing>
                         </child>
                         <child>
@@ -626,63 +638,102 @@
                             <property name="can_focus">True</property>
                             <property name="width_chars">6</property>
                             <property name="text" translatable="yes">0.000</property>
-                            <property name="adjustment">_yShift</property>
+                            <property name="adjustment">_FOV</property>
                             <property name="digits">3</property>
+                            <property name="value">60</property>
                           </object>
                           <packing>
                             <property name="expand">False</property>
                             <property name="fill">True</property>
                             <property name="pack_type">end</property>
-                            <property name="position">3</property>
-                          </packing>
-                        </child>
-                        <child>
-                          <object class="GtkLabel">
-                            <property name="visible">True</property>
-                            <property name="can_focus">False</property>
-                            <property name="label" translatable="yes">Y</property>
-                          </object>
-                          <packing>
-                            <property name="expand">False</property>
-                            <property name="fill">True</property>
-                            <property name="pack_type">end</property>
-                            <property name="position">4</property>
-                          </packing>
-                        </child>
-                        <child>
-                          <object class="GtkSpinButton">
-                            <property name="visible">True</property>
-                            <property name="can_focus">True</property>
-                            <property name="width_chars">6</property>
-                            <property name="text" translatable="yes">0.000</property>
-                            <property name="adjustment">_xShift</property>
-                            <property name="digits">3</property>
-                          </object>
-                          <packing>
-                            <property name="expand">False</property>
-                            <property name="fill">True</property>
-                            <property name="pack_type">end</property>
-                            <property name="position">5</property>
-                          </packing>
-                        </child>
-                        <child>
-                          <object class="GtkLabel">
-                            <property name="visible">True</property>
-                            <property name="can_focus">False</property>
-                            <property name="label" translatable="yes">X</property>
-                          </object>
-                          <packing>
-                            <property name="expand">False</property>
-                            <property name="fill">True</property>
-                            <property name="pack_type">end</property>
-                            <property name="position">6</property>
+                            <property name="position">1</property>
                           </packing>
                         </child>
                       </object>
                       <packing>
                         <property name="expand">False</property>
                         <property name="fill">False</property>
-                        <property name="position">2</property>
+                        <property name="position">4</property>
+                      </packing>
+                    </child>
+                    <child>
+                      <object class="GtkBox" id="translation5">
+                        <property name="visible">True</property>
+                        <property name="can_focus">False</property>
+                        <child>
+                          <object class="GtkLabel">
+                            <property name="visible">True</property>
+                            <property name="can_focus">False</property>
+                            <property name="label" translatable="yes">Переднее отсечение</property>
+                          </object>
+                          <packing>
+                            <property name="expand">False</property>
+                            <property name="fill">True</property>
+                            <property name="position">0</property>
+                          </packing>
+                        </child>
+                        <child>
+                          <object class="GtkSpinButton">
+                            <property name="visible">True</property>
+                            <property name="can_focus">True</property>
+                            <property name="width_chars">6</property>
+                            <property name="text" translatable="yes">0.000</property>
+                            <property name="adjustment">_clipStart</property>
+                            <property name="digits">3</property>
+                            <property name="value">0.01</property>
+                          </object>
+                          <packing>
+                            <property name="expand">False</property>
+                            <property name="fill">True</property>
+                            <property name="pack_type">end</property>
+                            <property name="position">1</property>
+                          </packing>
+                        </child>
+                      </object>
+                      <packing>
+                        <property name="expand">False</property>
+                        <property name="fill">False</property>
+                        <property name="position">5</property>
+                      </packing>
+                    </child>
+                    <child>
+                      <object class="GtkBox" id="translation6">
+                        <property name="visible">True</property>
+                        <property name="can_focus">False</property>
+                        <child>
+                          <object class="GtkLabel">
+                            <property name="visible">True</property>
+                            <property name="can_focus">False</property>
+                            <property name="label" translatable="yes">Заднее отсечение</property>
+                          </object>
+                          <packing>
+                            <property name="expand">False</property>
+                            <property name="fill">True</property>
+                            <property name="position">0</property>
+                          </packing>
+                        </child>
+                        <child>
+                          <object class="GtkSpinButton">
+                            <property name="visible">True</property>
+                            <property name="can_focus">True</property>
+                            <property name="width_chars">6</property>
+                            <property name="text" translatable="yes">0.000</property>
+                            <property name="adjustment">_clipEnd</property>
+                            <property name="digits">3</property>
+                            <property name="value">100</property>
+                          </object>
+                          <packing>
+                            <property name="expand">False</property>
+                            <property name="fill">True</property>
+                            <property name="pack_type">end</property>
+                            <property name="position">1</property>
+                          </packing>
+                        </child>
+                      </object>
+                      <packing>
+                        <property name="expand">False</property>
+                        <property name="fill">False</property>
+                        <property name="position">6</property>
                       </packing>
                     </child>
                   </object>
@@ -691,7 +742,7 @@
                   <object class="GtkLabel">
                     <property name="visible">True</property>
                     <property name="can_focus">False</property>
-                    <property name="label" translatable="yes">Преобразования</property>
+                    <property name="label" translatable="yes">Камера</property>
                   </object>
                 </child>
               </object>
@@ -942,7 +993,7 @@
               <packing>
                 <property name="expand">False</property>
                 <property name="fill">True</property>
-                <property name="position">1</property>
+                <property name="position">2</property>
               </packing>
             </child>
             <child>
@@ -1159,7 +1210,7 @@
               <packing>
                 <property name="expand">False</property>
                 <property name="fill">True</property>
-                <property name="position">2</property>
+                <property name="position">3</property>
               </packing>
             </child>
             <child>
@@ -1677,7 +1728,7 @@
               <packing>
                 <property name="expand">False</property>
                 <property name="fill">True</property>
-                <property name="position">3</property>
+                <property name="position">4</property>
               </packing>
             </child>
             <child>

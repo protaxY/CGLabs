@@ -1,28 +1,33 @@
 ﻿using System.Numerics;
 using System.Collections.Generic;
+using System.ComponentModel.DataAnnotations.Schema;
 using System.Linq;
 
 namespace CG
 {
     public class Vertex
     {
-        public Vector4 Point = new Vector4();
+        public uint Id;
+        public Vector4 Position = new Vector4();
         public List<Polygon> Polygons = new List<Polygon>();
         public Vector3 Color = new Vector3(0.57f, 0.81f, 0.21f);
 
-        public Vertex(float x, float y, float z)
+        public Vertex(float x, float y, float z, uint id)
         {
-            Point = new Vector4(x, y, z, 1);
+            Id = id;
+            Position = new Vector4(x, y, z, 1);
         }
 
-        public Vertex()
+        public Vertex(uint id)
         {
-            Point = new Vector4(0, 0, 0, 1);
+            Id = id;
+            Position = new Vector4(0, 0, 0, 1);
         }
         
-        public Vertex(Vector4 vector4)
+        public Vertex(Vector4 vector4, uint id)
         {
-            Point = vector4;
+            Id = id;
+            Position = vector4;
         }
 
         public Vector4 CalculateNormal()
@@ -55,7 +60,7 @@ namespace CG
         
         public static Vector3 ToVector3(Vertex vertex)
         { 
-            return new Vector3(vertex.Point.X, vertex.Point.Y, vertex.Point.Z);
+            return new Vector3(vertex.Position.X, vertex.Position.Y, vertex.Position.Z);
         }
         
         public Vector4 CalculateNormal()
@@ -77,7 +82,7 @@ namespace CG
             Vector4 result = new Vector4(0, 0, 0, 0);
             for (int i = 0; i < Vertexes.Count; ++i)
             {
-                result += (1 / (float)Vertexes.Count) * Vertexes[i].Point;
+                result += (1 / (float)Vertexes.Count) * Vertexes[i].Position;
             }
 
             return result;
@@ -87,37 +92,25 @@ namespace CG
     public class Mesh
     {
         public List<Vertex> Vertices = new List<Vertex>();
-        public List<Vertex> TransformedVertices = new List<Vertex>();
         public List<Polygon> Polygons = new List<Polygon>();
-        public List<Polygon> TransformedPolygons = new List<Polygon>(); //связывают преобразованные вершины
 
         public Mesh()
         {
             Vertices = new List<Vertex>();
-            TransformedVertices = new List<Vertex>();
             Polygons = new List<Polygon>();
-            TransformedPolygons = new List<Polygon>();
         }
 
         public Mesh(List<Vertex> vertices, List<Polygon> polygons)
         {
             Vertices = vertices;
-            TransformedVertices = new List<Vertex>(Vertices.Count);
             Polygons = polygons;
-            TransformedPolygons = new List<Polygon>(Polygons.Count);
         }
         
         public Mesh(List<Vertex> vertices, List<List<int>> polygons)
         {
             Vertices = new List<Vertex>(vertices);
-            TransformedVertices = new List<Vertex>(vertices.Count);
-            for (int i = 0; i < TransformedVertices.Capacity; ++i)
-            {
-                TransformedVertices.Add(new Vertex(0, 0, 0));
-            }
-            
+
             Polygons = new List<Polygon>();
-            TransformedPolygons = new List<Polygon>();
             
             foreach (var polygon in polygons)
             {
@@ -126,29 +119,19 @@ namespace CG
                 foreach (var vertexIndex in polygon)
                 {
                     polygonVertices.Add(vertices[vertexIndex]);
-                    transformedPolygonVertices.Add(TransformedVertices[vertexIndex]);
                 }
                 Polygons.Add(new Polygon(polygonVertices));
-                TransformedPolygons.Add(new Polygon(transformedPolygonVertices));
-            }
-        }
-        
-        public void ApplyTransformation(Matrix4x4 transformationMatrix)
-        {
-            for (int i = 0; i < Vertices.Count(); ++i)
-            {
-                TransformedVertices[i].Point = Vector4.Transform(Vertices[i].Point, transformationMatrix);
             }
         }
 
         public void SetColor(Vector3 color)
         {
-            foreach (Polygon polygon in TransformedPolygons)
+            foreach (Polygon polygon in Polygons)
             {
                 polygon.Color = color;
             }
             
-            foreach (Vertex vertex in TransformedVertices)
+            foreach (Vertex vertex in Vertices)
             {
                 vertex.Color = color;
             }
@@ -156,12 +139,12 @@ namespace CG
         
         public void SetColor(float r, float g, float b)
         {
-            foreach (Polygon polygon in TransformedPolygons)
+            foreach (Polygon polygon in Polygons)
             {
                 polygon.Color = new Vector3(r, g, b);
             }
             
-            foreach (Vertex vertex in TransformedVertices)
+            foreach (Vertex vertex in Vertices)
             {
                 vertex.Color = new Vector3(r, g, b);
             }
@@ -181,18 +164,24 @@ namespace CG
                     Polygons.RemoveAt(i);
                     Polygons.Insert(i, second);
                     Polygons.Insert(i, first);
-                    
-                    first = new Polygon(new List<Vertex>{TransformedPolygons[i].Vertexes[0], TransformedPolygons[i].Vertexes[1], TransformedPolygons[i].Vertexes[2]});
-                    first.Color = Polygons[i].Color;
-                    second = new Polygon(new List<Vertex>{TransformedPolygons[i].Vertexes[2], TransformedPolygons[i].Vertexes[3], TransformedPolygons[i].Vertexes[0]});
-                    second.Color = Polygons[i].Color;
-                    
-                    TransformedPolygons.RemoveAt(i);
-                    TransformedPolygons.Insert(i, second);
-                    TransformedPolygons.Insert(i, first);
                     // вставка с сохранением порядка (может пригодиться?)
                 }
             }
+        }
+
+        public List<uint> GetEnumerationOfVertexes()
+        {
+            List<uint> result = new List<uint>();
+
+            for (int i = 0; i < Polygons.Count; ++i)
+            {
+                for (int j = 0; j < Polygons[i].Vertexes.Count; ++j)
+                {
+                    result.Add(Polygons[i].Vertexes[j].Id);
+                }
+            }
+
+            return result;
         }
     }
 }
