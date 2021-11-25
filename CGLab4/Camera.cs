@@ -7,32 +7,32 @@ namespace CG
     public class Camera
     {
         public Vector3 Position;
-        public Vector3 Rotation;
+        public Vector3 Rotation; // в градусах
         public float AspectRatio;
-        public float FOV;
+        public float FOV; // в градусах
         public float ClipStart;
         public float ClipEnd;
         
         public Camera(Vector3 position, Vector3 rotation, float aspectRatio, float fov, float clipStart, float clipEnd)
         {
             Position = position;
-            Rotation = rotation; // поворот в градусах
+            Rotation = rotation; // в градусах
             AspectRatio = aspectRatio;
-            FOV = fov;
+            FOV = fov; // в градусах
             ClipStart = clipStart;
             ClipEnd = clipEnd;
         }
 
         public Matrix4x4 CalculateRotationMatrix()
         {
-            Matrix4x4 result = Matrix4x4.CreateRotationX((float)(Rotation.X * 2 * Math.PI / 180));
-            result *= Matrix4x4.CreateRotationY((float)(Rotation.Y * 2 * Math.PI / 180));
-            result *= Matrix4x4.CreateRotationZ((float)(Rotation.Z * 2 * Math.PI / 180));
+            Matrix4x4 result = Matrix4x4.CreateRotationX((float)(Rotation.X * Math.PI / 180));
+            result *= Matrix4x4.CreateRotationY((float)(Rotation.Y * Math.PI / 180));
+            result *= Matrix4x4.CreateRotationZ((float)(Rotation.Z * Math.PI / 180));
             return result;
         }
 
         // объектно-видовая матрица камеры
-        public Matrix4x4 GetViewMatrix()
+        public Matrix4x4 CalculateViewMatrix()
         {
             Matrix4x4 rotationTransforamtion = CalculateRotationMatrix();
 
@@ -58,17 +58,13 @@ namespace CG
         }
 
         // матрица проекции (применить после перехода в базис камеры)
-        public Matrix4x4 GetProjectionMatrix()
+        public Matrix4x4 CalculateProjectionMatrix()
         {
-            var sin = (float)Math.Sin(FOV);
-            var cotan = (float)Math.Cos(FOV) / sin;
-            var clip = ClipEnd - ClipStart;
-            return new Matrix4x4(
-                cotan/AspectRatio,     0,     0,      0,
-                0,                 cotan,     0,      0,
-                0, 0, -(ClipStart+ClipEnd)/clip, -(2f*ClipStart*ClipEnd)/clip,
-                0,                     0,     -1,     1
-            );
+            return Matrix4x4.Transpose(
+                Matrix4x4.CreatePerspectiveFieldOfView((float)(FOV * Math.PI / 180), 
+                                                        AspectRatio, 
+                                                        ClipStart, 
+                                                        ClipEnd));
         }
     }
 }

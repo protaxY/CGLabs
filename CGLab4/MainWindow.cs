@@ -1,18 +1,14 @@
 using System;
 using System.Collections.Generic;
-using System.Linq;
 using System.Numerics;
 using Gtk;
 using Gdk;
-using Cairo;
 using System.IO;
 using System.Text;
 using System.Reflection;
 using System.Diagnostics;
 
-
 using SharpGL;
-using SharpGL.Shaders;
 using Application = Gtk.Application;
 using Window = Gtk.Window;
 using UI = Gtk.Builder.ObjectAttribute;
@@ -22,7 +18,14 @@ namespace CG
     class MainWindow : Window
     {
         [UI] private GLArea _glArea = null;
-
+        private OpenGL gl = null;
+        // вершинные массивы
+        private uint mainVAO;
+        private uint normalsVAO;
+        // буферы
+        private uint VBO;
+        private uint VIO;
+        
         #region UI спинбаттонов и чекбоксов
         //камера
         [UI] private Adjustment _xPosition = null;
@@ -51,38 +54,6 @@ namespace CG
         [UI] private CheckButton _allowWireframe = null;
         [UI] private CheckButton _allowInvisPoly = null;
 
-        //материал
-        [UI] private Adjustment _materialColorR = null;
-        [UI] private Adjustment _materialColorG = null;
-        [UI] private Adjustment _materialColorB = null;
-
-        [UI] private Adjustment _k_aR = null;
-        [UI] private Adjustment _k_aG = null;
-        [UI] private Adjustment _k_aB = null;
-
-        [UI] private Adjustment _k_dR = null;
-        [UI] private Adjustment _k_dG = null;
-        [UI] private Adjustment _k_dB = null;
-
-        [UI] private Adjustment _k_sR = null;
-        [UI] private Adjustment _k_sG = null;
-        [UI] private Adjustment _k_sB = null;
-
-        [UI] private Adjustment _p = null;
-        
-        //точечный источник света
-        [UI] private CheckButton _allowPointLightVisible = null;
-
-        [UI] private Adjustment _pointLightIntensityR = null;
-        [UI] private Adjustment _pointLightIntensityG = null;
-        [UI] private Adjustment _pointLightIntensityB = null;
-
-        [UI] private Adjustment _pointLightPositionX = null;
-        [UI] private Adjustment _pointLightPositionY = null;
-        [UI] private Adjustment _pointLightPositionZ = null;
-
-        [UI] private Adjustment _attenuationСoefficient = null;
-
         #endregion
 
         #region UI матрицы
@@ -106,48 +77,35 @@ namespace CG
 
         #endregion
 
-        [UI] private ComboBoxText _projectionMode = null;
-
-        [UI] private ComboBoxText _lightingModel = null;
-
-        private float _defaultScale = 200;
         private float _mouseRotationSensitivity = 1f / 1000f;
-        private float _compressedScale = 1;
-        private Matrix4x4 _defaultTransformationMatrix;
-        private Matrix4x4 _transformationMatrix;
+        private Matrix4x4 _cameraTransformationMatrix;
 
-        private float _axisSize = 40;
-        private Vector3 _axisPosition = Vector3.One;
-        private Matrix4x4 _axisTransformMatrix = Matrix4x4.Identity;
+        private bool _figureChanged = false;
 
         #region Мышь
 
-        private Vector3 _mousePosition = new Vector3(0, 0, 0);
-        private uint _mousePressedButton = 0;
+        private Vector3 _mousePosition;
+        private uint _mousePressedButton;
 
         #endregion
-
-        private CairoSurface _surface;
-
-        private enum Projection
-        {
-            None,
-            Front,
-            Right,
-            Top,
-            Isometric
-        }
-
+        
         private enum Shading
         {
             Flat,
             Gouraud
         }
+        
+        private enum FragmetShaderColorMode
+        {
+            DarkBlue,
+            Green
+        }
 
         #region выстраиваивание сцены
 
-        private Camera _camera = new Camera(new Vector3(0, 0, 3), new Vector3(0, 0, 0), 
+        private Camera _camera = new Camera(new Vector3(0f, -2.3f, 0f), new Vector3(90f, 0f, 0f), 
             1, 60, (float)0.01, (float)1000);
+        
         private Mesh _figure = new Ellipsoid(1, 1, 1, 16, 8);
         private PointLight _pointLight = new PointLight(3, 0, 0, 1, 1, 1);
 
@@ -155,8 +113,7 @@ namespace CG
 
         public MainWindow() : this(new Builder("CGLab4.glade"))
         {
-            _transformationMatrix = Matrix4x4.Identity;
-
+            _cameraTransformationMatrix = _camera.CalculateProjectionMatrix() * _camera.CalculateViewMatrix();
             _figure.TriangulateSquares();
         }
 
@@ -169,122 +126,117 @@ namespace CG
 
             _glArea.SizeAllocated += (o, args) =>
             {
-                _camera.AspectRatio = (float)args.Allocation.Width / (float)args.Allocation.Height;
+                _aspectRatio.Value = (float)args.Allocation.Width / (float)args.Allocation.Height;
+                _camera.AspectRatio = (float)_aspectRatio.Value;
+                _cameraTransformationMatrix = _camera.CalculateProjectionMatrix() * _camera.CalculateViewMatrix();
+                updateTranformationMatrixAdjustments();
             };
 
             #region Обработка спинбатоннов, чекбоксов и комботекстбоксов
 
             _xPosition.ValueChanged += (o, args) =>
             {
-                // _camera.Position.X = (float)_xPosition.Value;
+                _camera.Position.X = (float)_xPosition.Value;
+                _cameraTransformationMatrix = _camera.CalculateProjectionMatrix() * _camera.CalculateViewMatrix();
+                updateTranformationMatrixAdjustments();
             };
-            _xPosition.ValueChanged += (o, args) =>
+            _yPosition.ValueChanged += (o, args) =>
             {
-                // _camera.Position.Y = (float)_yPosition.Value;
-                
+                _camera.Position.Y = (float)_yPosition.Value;
+                _cameraTransformationMatrix = _camera.CalculateProjectionMatrix() * _camera.CalculateViewMatrix();
+                updateTranformationMatrixAdjustments();
             };
-            _xPosition.ValueChanged += (o, args) =>
+            _zPosition.ValueChanged += (o, args) =>
             {
-                // _camera.Position.Z = (float)_zPosition.Value;
-                
+                _camera.Position.Z = (float)_zPosition.Value;
+                _cameraTransformationMatrix = _camera.CalculateProjectionMatrix() * _camera.CalculateViewMatrix();
+                updateTranformationMatrixAdjustments();
             };
-
+            
             _xRotation.ValueChanged += (o, args) =>
             {
-                // _camera.Rotation.X = (float)_xRotation.Value;
-                
+                _camera.Rotation.X = (float)_xRotation.Value;
+                _cameraTransformationMatrix = _camera.CalculateProjectionMatrix() * _camera.CalculateViewMatrix();
+                updateTranformationMatrixAdjustments();
             };
             _yRotation.ValueChanged += (o, args) =>
             {
-                // _camera.Rotation.Y = (float)_yRotation.Value;
-                
+                _camera.Rotation.Y = (float)_yRotation.Value;
+                _cameraTransformationMatrix = _camera.CalculateProjectionMatrix() * _camera.CalculateViewMatrix();
+                updateTranformationMatrixAdjustments();
             };
             _zRotation.ValueChanged += (o, args) =>
             {
-                // _camera.Rotation.Z = (float)_zRotation.Value;
-                
-            };
-
-            _allowNormals.Toggled += (o, args) =>
-            {
-                
-                
-            };
-            _allowWireframe.Toggled += (o, args) =>
-            {
-                
-                
-            };
-            _allowInvisPoly.Toggled += (o, args) =>
-            {
-                
-                
-            };
-            _allowZBuffer.Toggled += (o, args) =>
-            {
-                
-                
+                _camera.Rotation.Z = (float)_zRotation.Value;
+                _cameraTransformationMatrix = _camera.CalculateProjectionMatrix() * _camera.CalculateViewMatrix();
+                updateTranformationMatrixAdjustments();
             };
             
+            _FOV.ValueChanged += (o, args) =>
+            {
+                _camera.FOV = (float) _FOV.Value;
+                _cameraTransformationMatrix = _camera.CalculateProjectionMatrix() * _camera.CalculateViewMatrix();
+                updateTranformationMatrixAdjustments();
+            };
+
+            _clipStart.ValueChanged += (o, args) =>
+            {
+                _camera.ClipStart = (float) _clipStart.Value;
+                _cameraTransformationMatrix = _camera.CalculateProjectionMatrix() * _camera.CalculateViewMatrix();
+                updateTranformationMatrixAdjustments();
+            };
+
+            _clipEnd.ValueChanged += (o, args) =>
+            {
+                _camera.ClipEnd = (float) _clipEnd.Value;
+                _cameraTransformationMatrix = _camera.CalculateProjectionMatrix() * _camera.CalculateViewMatrix();
+                updateTranformationMatrixAdjustments();
+            };
+
             _a.ValueChanged += (o, args) =>
             {
+                _figureChanged = true;
                 _figure = new Ellipsoid((float) _a.Value,
                     (float) _b.Value, (float) _c.Value,
                     (int) _meridiansCount.Value,
                     (int) _parallelsCount.Value);
                 _figure.TriangulateSquares();
-                _figure.SetColor((float) _materialColorR.Value,
-                    (float) _materialColorG.Value,
-                    (float) _materialColorB.Value);
-                
             };
             _b.ValueChanged += (o, args) =>
             {
+                _figureChanged = true;
                 _figure = new Ellipsoid((float) _a.Value,
                     (float) _b.Value, (float) _c.Value,
                     (int) _meridiansCount.Value,
                     (int) _parallelsCount.Value);
                 _figure.TriangulateSquares();
-                _figure.SetColor((float) _materialColorR.Value,
-                    (float) _materialColorG.Value,
-                    (float) _materialColorB.Value);
-                
             };
             _c.ValueChanged += (o, args) =>
             {
+                _figureChanged = true;
                 _figure = new Ellipsoid((float) _a.Value,
                     (float) _b.Value, (float) _c.Value,
                     (int) _meridiansCount.Value,
                     (int) _parallelsCount.Value);
                 _figure.TriangulateSquares();
-                _figure.SetColor((float) _materialColorR.Value,
-                    (float) _materialColorG.Value,
-                    (float) _materialColorB.Value);
-                
             };
             _meridiansCount.ValueChanged += (o, args) =>
             {
+                _figureChanged = true;
                 _figure = new Ellipsoid((float) _a.Value,
                     (float) _b.Value, (float) _c.Value,
                     (int) _meridiansCount.Value,
                     (int) _parallelsCount.Value);
                 _figure.TriangulateSquares();
-                _figure.SetColor((float) _materialColorR.Value,
-                    (float) _materialColorG.Value,
-                    (float) _materialColorB.Value);
-                
             };
             _parallelsCount.ValueChanged += (o, args) =>
             {
+                _figureChanged = true;
                 _figure = new Ellipsoid((float) _a.Value,
                     (float) _b.Value, (float) _c.Value,
                     (int) _meridiansCount.Value,
                     (int) _parallelsCount.Value);
                 _figure.TriangulateSquares();
-                _figure.SetColor((float) _materialColorR.Value,
-                    (float) _materialColorG.Value,
-                    (float) _materialColorB.Value);
-                
             };
 
             #endregion
@@ -293,83 +245,67 @@ namespace CG
 
             _m11.ValueChanged += (o, args) =>
             {
-                _transformationMatrix.M11 = (float) _m11.Value;
-                
+                _cameraTransformationMatrix.M11 = (float) _m11.Value;
             };
             _m12.ValueChanged += (o, args) =>
             {
-                _transformationMatrix.M12 = (float) _m12.Value;
-                
+                _cameraTransformationMatrix.M12 = (float) _m12.Value;
             };
             _m13.ValueChanged += (o, args) =>
             {
-                _transformationMatrix.M13 = (float) _m13.Value;
-                
+                _cameraTransformationMatrix.M13 = (float) _m13.Value;
             };
             _m14.ValueChanged += (o, args) =>
             {
-                _transformationMatrix.M14 = (float) _m14.Value;
-                
+                _cameraTransformationMatrix.M14 = (float) _m14.Value;
             };
             _m21.ValueChanged += (o, args) =>
             {
-                _transformationMatrix.M21 = (float) _m21.Value;
-                
+                _cameraTransformationMatrix.M21 = (float) _m21.Value;
             };
             _m22.ValueChanged += (o, args) =>
             {
-                _transformationMatrix.M22 = (float) _m22.Value;
-                
+                _cameraTransformationMatrix.M22 = (float) _m22.Value;
             };
             _m23.ValueChanged += (o, args) =>
             {
-                _transformationMatrix.M23 = (float) _m23.Value;
-                
+                _cameraTransformationMatrix.M23 = (float) _m23.Value;
             };
             _m24.ValueChanged += (o, args) =>
             {
-                _transformationMatrix.M24 = (float) _m24.Value;
-                
+                _cameraTransformationMatrix.M24 = (float) _m24.Value;
             };
             _m31.ValueChanged += (o, args) =>
             {
-                _transformationMatrix.M31 = (float) _m31.Value;
-                
+                _cameraTransformationMatrix.M31 = (float) _m31.Value;
             };
             _m32.ValueChanged += (o, args) =>
             {
-                _transformationMatrix.M32 = (float) _m32.Value;
-                
+                _cameraTransformationMatrix.M32 = (float) _m32.Value;
             };
             _m33.ValueChanged += (o, args) =>
             {
-                _transformationMatrix.M33 = (float) _m33.Value;
-                
+                _cameraTransformationMatrix.M33 = (float) _m33.Value;
             };
             _m34.ValueChanged += (o, args) =>
             {
-                _transformationMatrix.M34 = (float) _m34.Value;
-                
+                _cameraTransformationMatrix.M34 = (float) _m34.Value;
             };
             _m41.ValueChanged += (o, args) =>
             {
-                _transformationMatrix.M41 = (float) _m41.Value;
-                
+                _cameraTransformationMatrix.M41 = (float) _m41.Value;
             };
             _m42.ValueChanged += (o, args) =>
             {
-                _transformationMatrix.M42 = (float) _m42.Value;
-                
+                _cameraTransformationMatrix.M42 = (float) _m42.Value;
             };
             _m43.ValueChanged += (o, args) =>
             {
-                _transformationMatrix.M43 = (float) _m43.Value;
-                
+                _cameraTransformationMatrix.M43 = (float) _m43.Value;
             };
             _m44.ValueChanged += (o, args) =>
             {
-                _transformationMatrix.M44 = (float) _m44.Value;
-                
+                _cameraTransformationMatrix.M44 = (float) _m44.Value;
             };
 
             #endregion
@@ -393,15 +329,12 @@ namespace CG
                 
                 if (_mousePressedButton == 1)
                 {
-                    // Vector4 shift = Vector4.Transform(new Vector4((_currentMousePosition.X - _mousePosition.X) / 200, 
-                    //     (_currentMousePosition.Y - _mousePosition.Y) / 200, 0, 0), rotationtransformation);
-                    Vector4 shift = Vector4.Transform(new Vector4((_currentMousePosition.X - _mousePosition.X) / 200, 
+                    Vector4 shift = Vector4.Transform(new Vector4(-(_currentMousePosition.X - _mousePosition.X) / 200, 
                         (_currentMousePosition.Y - _mousePosition.Y) / 200, 0, 0), rotationtransformation);
-                    
-                    
-                    _xPosition.Value = shift.X;
-                    _yPosition.Value = shift.Y;
-                    _zPosition.Value = shift.Z;
+
+                    _xPosition.Value += shift.X;
+                    _yPosition.Value += shift.Y;
+                    _zPosition.Value += shift.Z;
                 }
 
                 if (_mousePressedButton == 3)
@@ -448,15 +381,6 @@ namespace CG
             #endregion
         }
 
-        private void Window_DeleteEvent(object sender, DeleteEventArgs a)
-        {
-            Application.Quit();
-        }
-
-        #region Отрисовка фигруы
-
-        #endregion
-        
         private static void MatrixToAngles(Matrix4x4 matrix, out double x, out double y, out double z)
         {
             //область определения аркстангенса от pi/2 до -pi/2
@@ -465,19 +389,11 @@ namespace CG
             z = Math.Atan2(matrix.M12, matrix.M11) / Math.PI * 180;
         }
 
-        private void CalculateAxisTransformationMatrix()
-        {
-            _axisTransformMatrix = Matrix4x4.CreateRotationX((float) (_xRotation.Value * Math.PI / 180)) *
-                                   Matrix4x4.CreateRotationY((float) (_yRotation.Value * Math.PI / 180)) *
-                                   Matrix4x4.CreateRotationZ((float) (_zRotation.Value * Math.PI / 180));
-            _axisTransformMatrix *= Matrix4x4.CreateTranslation(_axisPosition.X, _axisPosition.Y, 0);
-        }
-
         private void GLInit(object sender, EventArgs args)
         {
             var glArea = sender as GLArea;
-            var gl = new OpenGL();
             glArea.MakeCurrent();
+            gl = new OpenGL();
             
             var frame_clock = glArea.Context.Window.FrameClock;
             frame_clock.Update += (_, _) => glArea.QueueRender();
@@ -539,13 +455,14 @@ namespace CG
             // создать объект вершинного массива
             uint[] arrays = new uint[1];
             gl.GenVertexArrays(1, arrays);
-            uint VAO = arrays[0];
+            mainVAO = arrays[0];
             // создать буффер вершин
             uint[] buffers = new uint[2];
             gl.GenBuffers(2, buffers);
-            uint VBO = buffers[0], VIO = buffers[1];
+            VBO = buffers[0];
+            VIO = buffers[1];
             
-            gl.BindVertexArray(VAO);
+            gl.BindVertexArray(mainVAO);
             //загрузить данные в буфер
             gl.BindBuffer(OpenGL.GL_ARRAY_BUFFER, VBO);
             gl.BindBuffer(OpenGL.GL_ELEMENT_ARRAY_BUFFER, VIO);
@@ -562,13 +479,13 @@ namespace CG
             gl.BindVertexArray(0);
             
             //настройка параметров 
-            gl.FrontFace(OpenGL.GL_CCW);
+            gl.FrontFace(OpenGL.GL_CW);
             
             gl.Enable(OpenGL.GL_DEPTH_TEST);
             gl.DepthFunc(OpenGL.GL_LESS);
             
-            // gl.Enable(OpenGL.GL_BLEND);
-            // gl.BlendFunc(OpenGL.GL_SRC_ALPHA, OpenGL.GL_ONE_MINUS_SRC_ALPHA);
+            gl.Enable(OpenGL.GL_BLEND);
+            gl.BlendFunc(OpenGL.GL_SRC_ALPHA, OpenGL.GL_ONE_MINUS_SRC_ALPHA);
             
             gl.Enable(OpenGL.GL_CULL_FACE);
             gl.CullFace(OpenGL.GL_BACK);
@@ -576,31 +493,100 @@ namespace CG
             // gl.Enable(OpenGL.GL_LINE_SMOOTH);
             // gl.Hint(OpenGL.GL_LINE_SMOOTH_HINT, OpenGL.GL_NICEST);
             
-            gl.ClearColor(0, 0, 0, 1);
+            gl.ClearColor(0.2f, 0.2f, 0.2f, 1);
             
             glArea.Render += (o, args) =>
             {
-                //обновитья данные камеры
-                _camera.Position.X = (float)_xPosition.Value;
-                _camera.Position.Y = (float)_yPosition.Value;
-                _camera.Position.Z = (float)_zPosition.Value;
-                
-                _camera.Rotation.X = (float)_xRotation.Value;
-                _camera.Rotation.Y = (float)_yRotation.Value;
-                _camera.Rotation.Z = (float)_zRotation.Value;
-                
                 gl.UseProgram(shaderProgram);
                 //отчистить буферы
                 gl.Clear(OpenGL.GL_COLOR_BUFFER_BIT | OpenGL.GL_DEPTH_BUFFER_BIT);
-                gl.ClearDepth(1.0f);    // 0 - ближе, 1 - далеко 
+                gl.ClearDepth(1.0f); // 0 - ближе, 1 - далеко 
                 gl.ClearStencil(0);
 
                 int transformationMatrixLocation = gl.GetUniformLocation(shaderProgram, "tramsformation");
-                Matrix4x4 cameraTransformationMatrix = _camera.GetProjectionMatrix() * _camera.GetViewMatrix();
-                gl.UniformMatrix4(transformationMatrixLocation, 1, false,  ToArray(cameraTransformationMatrix));
+                updateTranformationMatrixAdjustments();
+                gl.UniformMatrix4(transformationMatrixLocation, 1, false,  ToArray(_cameraTransformationMatrix));
+                
+                
 
-                gl.BindVertexArray(VAO);
-                gl.DrawElements(OpenGL.GL_TRIANGLES, indexes.Length, OpenGL.GL_UNSIGNED_INT, IntPtr.Zero);
+                #region отрисовка с разными опциями
+
+                gl.BindVertexArray(mainVAO);
+
+                if (_figureChanged)
+                {
+                    _figureChanged = false;
+                    
+                    #region обновить буферы
+
+                    //перевожу координаты верши в массив float
+                    List<float> vertices = new List<float>();
+                    for (int i = 0; i < _figure.Vertices.Count; ++i)
+                    {
+                        vertices.Add(_figure.Vertices[i].Position.X);
+                        vertices.Add(_figure.Vertices[i].Position.Y);
+                        vertices.Add(_figure.Vertices[i].Position.Z);
+                    }
+                    gl.BindVertexArray(mainVAO);
+                    // данные о вершинах 
+                    gl.BufferData(OpenGL.GL_ARRAY_BUFFER, vertices.ToArray(), OpenGL.GL_DYNAMIC_DRAW);
+                    // массив индексов
+                    indexes = _figure.GetEnumerationOfVertexes().ToArray();
+                    gl.BufferData(OpenGL.GL_ELEMENT_ARRAY_BUFFER, indexes, OpenGL.GL_DYNAMIC_DRAW);
+                
+                    #endregion
+                }
+
+                if (_allowZBuffer.Active)
+                {
+                    gl.Enable(OpenGL.GL_DEPTH_TEST);
+                    gl.CullFace(OpenGL.GL_BACK);
+                }
+                else if (!_allowZBuffer.Active)
+                    gl.Disable(OpenGL.GL_DEPTH_TEST);
+                
+                if (_allowWireframe.Active && _allowInvisPoly.Active)
+                {
+                    gl.Disable(OpenGL.GL_CULL_FACE);
+                    
+                    gl.Uniform1(gl.GetUniformLocation(shaderProgram, "colorMode"), 1, new int[] {(int)FragmetShaderColorMode.Green});
+                    gl.PolygonMode(OpenGL.GL_FRONT_AND_BACK, OpenGL.GL_LINE);
+                    gl.DrawElements(OpenGL.GL_TRIANGLES, indexes.Length, OpenGL.GL_UNSIGNED_INT, IntPtr.Zero);
+                }
+                else if (_allowWireframe.Active && !_allowInvisPoly.Active)
+                {
+                    gl.Enable(OpenGL.GL_CULL_FACE);
+                    
+                    gl.Uniform1(gl.GetUniformLocation(shaderProgram, "colorMode"), 1, new int[] {(int)FragmetShaderColorMode.Green});
+                    gl.PolygonMode(OpenGL.GL_FRONT_AND_BACK, OpenGL.GL_LINE);
+                    gl.DrawElements(OpenGL.GL_TRIANGLES, indexes.Length, OpenGL.GL_UNSIGNED_INT, IntPtr.Zero);
+                }
+                else if (!_allowWireframe.Active && _allowInvisPoly.Active)
+                {
+                    gl.Disable(OpenGL.GL_CULL_FACE);
+
+                    gl.Uniform1(gl.GetUniformLocation(shaderProgram, "colorMode"), 1, new int[] {(int)FragmetShaderColorMode.DarkBlue});
+                    gl.PolygonMode(OpenGL.GL_FRONT_AND_BACK, OpenGL.GL_FILL);
+                    gl.DrawElements(OpenGL.GL_TRIANGLES, indexes.Length, OpenGL.GL_UNSIGNED_INT, IntPtr.Zero);
+                    
+                    gl.Uniform1(gl.GetUniformLocation(shaderProgram, "colorMode"), 1, new int[] {(int)FragmetShaderColorMode.Green});
+                    gl.PolygonMode(OpenGL.GL_FRONT_AND_BACK, OpenGL.GL_LINE);
+                    gl.DrawElements(OpenGL.GL_TRIANGLES, indexes.Length, OpenGL.GL_UNSIGNED_INT, IntPtr.Zero);
+                }
+                else if (!_allowWireframe.Active && !_allowInvisPoly.Active)
+                {
+                    gl.Enable(OpenGL.GL_CULL_FACE);
+                    
+                    gl.Uniform1(gl.GetUniformLocation(shaderProgram, "colorMode"), 1, new int[] {(int)FragmetShaderColorMode.DarkBlue});
+                    gl.PolygonMode(OpenGL.GL_FRONT_AND_BACK, OpenGL.GL_FILL);
+                    gl.DrawElements(OpenGL.GL_TRIANGLES, indexes.Length, OpenGL.GL_UNSIGNED_INT, IntPtr.Zero);
+                    
+                    gl.Uniform1(gl.GetUniformLocation(shaderProgram, "colorMode"), 1, new int[] {(int)FragmetShaderColorMode.Green});
+                    gl.PolygonMode(OpenGL.GL_FRONT_AND_BACK, OpenGL.GL_LINE);
+                    gl.DrawElements(OpenGL.GL_TRIANGLES, indexes.Length, OpenGL.GL_UNSIGNED_INT, IntPtr.Zero);
+                }
+
+                #endregion
                 gl.BindVertexArray(0);
             };
             
@@ -632,6 +618,30 @@ namespace CG
             {
                 return reader.ReadToEnd();
             }
+        }
+        
+        private void updateTranformationMatrixAdjustments()
+        {
+            #region Обновление спинбатоннов для матрицы
+
+            _m11.Value = _cameraTransformationMatrix.M11;
+            _m12.Value = _cameraTransformationMatrix.M12;
+            _m13.Value = _cameraTransformationMatrix.M13;
+            _m14.Value = _cameraTransformationMatrix.M14;
+            _m21.Value = _cameraTransformationMatrix.M21;
+            _m22.Value = _cameraTransformationMatrix.M22;
+            _m23.Value = _cameraTransformationMatrix.M23;
+            _m24.Value = _cameraTransformationMatrix.M24;
+            _m31.Value = _cameraTransformationMatrix.M31;
+            _m32.Value = _cameraTransformationMatrix.M32;
+            _m33.Value = _cameraTransformationMatrix.M33;
+            _m34.Value = _cameraTransformationMatrix.M34;
+            _m41.Value = _cameraTransformationMatrix.M41;
+            _m42.Value = _cameraTransformationMatrix.M42;
+            _m43.Value = _cameraTransformationMatrix.M43;
+            _m44.Value = _cameraTransformationMatrix.M44;
+            
+            #endregion
         }
     }
 }

@@ -77,7 +77,7 @@ namespace CG
 
         #endregion
 
-        private Vector3 _darkBlue = new Vector3(0, (float)0.2, (float)0.4);
+        private Vector3 _darkBlue = new Vector3(0, 0.2f, 0.4f);
         
         private enum Projection
         {
