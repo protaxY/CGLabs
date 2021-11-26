@@ -108,7 +108,6 @@ namespace CG
             1, 60, (float)0.01, (float)1000);
         
         private Mesh _figure = new Ellipsoid(1, 1, 1, 16, 8);
-        private PointLight _pointLight = new PointLight(3, 0, 0, 1, 1, 1);
 
         #endregion
 
