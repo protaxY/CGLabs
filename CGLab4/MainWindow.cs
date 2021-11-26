@@ -18,13 +18,13 @@ namespace CG
     class MainWindow : Window
     {
         [UI] private GLArea _glArea = null;
-        private OpenGL gl = null;
-        // вершинные массивы
-        private uint mainVAO;
-        private uint normalsVAO;
-        // буферы
-        private uint VBO;
-        private uint VIO;
+        // private OpenGL gl = null;
+        // // вершинные массивы
+        // private uint mainVAO;
+        // private uint normalsVAO;
+        // // буферы
+        // private uint VBO;
+        // private uint VIO;
         
         #region UI спинбаттонов и чекбоксов
         //камера
@@ -98,7 +98,8 @@ namespace CG
         private enum FragmetShaderColorMode
         {
             DarkBlue,
-            Green
+            Green,
+            Blue
         }
 
         #region выстраиваивание сцены
@@ -168,6 +169,13 @@ namespace CG
             _zRotation.ValueChanged += (o, args) =>
             {
                 _camera.Rotation.Z = (float)_zRotation.Value;
+                _cameraTransformationMatrix = _camera.CalculateProjectionMatrix() * _camera.CalculateViewMatrix();
+                updateTranformationMatrixAdjustments();
+            };
+            
+            _aspectRatio.ValueChanged += (o, args) =>
+            {
+                _camera.AspectRatio = (float) _aspectRatio.Value;
                 _cameraTransformationMatrix = _camera.CalculateProjectionMatrix() * _camera.CalculateViewMatrix();
                 updateTranformationMatrixAdjustments();
             };
@@ -393,7 +401,7 @@ namespace CG
         {
             var glArea = sender as GLArea;
             glArea.MakeCurrent();
-            gl = new OpenGL();
+            var gl = new OpenGL();
             
             var frame_clock = glArea.Context.Window.FrameClock;
             frame_clock.Update += (_, _) => glArea.QueueRender();
@@ -407,7 +415,6 @@ namespace CG
             gl.ShaderSource(vertexShader, vertexShaderSource);
             gl.CompileShader(vertexShader);
             
-            //TODO добавить вывод ошибок компиляции
             var txt = new StringBuilder(512);
             int[] tmp = new int[1];
             gl.GetShaderInfoLog(vertexShader, 512, IntPtr.Zero, txt);
@@ -415,30 +422,49 @@ namespace CG
             if (tmp[0] != OpenGL.GL_TRUE) Debug.WriteLine(txt);
             Debug.Assert(tmp[0] == OpenGL.GL_TRUE, "Vertexes Shader compilation failed");
             
+            uint polygonNormalsGeometryShader;
+            polygonNormalsGeometryShader = gl.CreateShader(OpenGL.GL_GEOMETRY_SHADER);
+            string polygonNormalsGeometryShaderSource = ReadFromRes(@"CGLab4.polygon_normals.geom");
+            gl.ShaderSource(polygonNormalsGeometryShader, polygonNormalsGeometryShaderSource);
+            gl.CompileShader(polygonNormalsGeometryShader);
+            
+            gl.GetShaderInfoLog(polygonNormalsGeometryShader, 512, IntPtr.Zero, txt);
+            gl.GetShader(polygonNormalsGeometryShader, OpenGL.GL_COMPILE_STATUS, tmp);
+            if (tmp[0] != OpenGL.GL_TRUE) Debug.WriteLine(txt);
+            Debug.Assert(tmp[0] == OpenGL.GL_TRUE, "Polygon Normals Geometry Shader compilation failed");
+            
             uint fragmentShader;
             fragmentShader = gl.CreateShader(OpenGL.GL_FRAGMENT_SHADER);
             string fragmentShaderSource = ReadFromRes(@"CGLab4.shader.frag");
             gl.ShaderSource(fragmentShader, fragmentShaderSource);
             gl.CompileShader(fragmentShader);
             
-            //TODO добавить вывод ошибок компиляции
             gl.GetShaderInfoLog(fragmentShader, 512, IntPtr.Zero, txt);
             gl.GetShader(fragmentShader, OpenGL.GL_COMPILE_STATUS, tmp);
             if (tmp[0] != OpenGL.GL_TRUE) Debug.WriteLine(txt);
             Debug.Assert(tmp[0] == OpenGL.GL_TRUE, "Fragmet Shader compilation failed");
             
-            uint shaderProgram;
+            uint shaderProgram, polygonNormalsShaderProgram;
             shaderProgram = gl.CreateProgram();
-            
+            polygonNormalsShaderProgram = gl.CreateProgram();
+
             gl.AttachShader(shaderProgram, vertexShader);
             gl.AttachShader(shaderProgram, fragmentShader);
             gl.LinkProgram(shaderProgram);
-            
-            //TODO добавить вывод ошибок компиляции
+
             gl.GetProgram(shaderProgram, OpenGL.GL_LINK_STATUS, tmp);
             Debug.Assert(tmp[0] == OpenGL.GL_TRUE, "Shader program link failed");
 
+            gl.AttachShader(polygonNormalsShaderProgram, vertexShader);
+            gl.AttachShader(polygonNormalsShaderProgram, polygonNormalsGeometryShader);
+            gl.AttachShader(polygonNormalsShaderProgram, fragmentShader);
+            gl.LinkProgram(polygonNormalsShaderProgram);
+            
+            gl.GetProgram(polygonNormalsShaderProgram, OpenGL.GL_LINK_STATUS, tmp);
+            Debug.Assert(tmp[0] == OpenGL.GL_TRUE, "Normals program link failed");
+            
             gl.DeleteShader(vertexShader);
+            gl.DeleteShader(polygonNormalsGeometryShader);
             gl.DeleteShader(fragmentShader);
             
             #endregion
@@ -453,29 +479,69 @@ namespace CG
             }
             
             // создать объект вершинного массива
-            uint[] arrays = new uint[1];
-            gl.GenVertexArrays(1, arrays);
-            mainVAO = arrays[0];
+            uint[] arrays = new uint[2];
+            gl.GenVertexArrays(2, arrays);
+            uint mainVAO = arrays[0];
+            uint normalsVAO = arrays[1];
+            
             // создать буффер вершин
-            uint[] buffers = new uint[2];
-            gl.GenBuffers(2, buffers);
-            VBO = buffers[0];
-            VIO = buffers[1];
+            uint[] buffers = new uint[4];
+            gl.GenBuffers(4, buffers);
+            uint VBO = buffers[0];
+            uint VIO = buffers[1];
+            uint normalsVBO = buffers[2];
+            uint normalsVIO = buffers[3];
             
             gl.BindVertexArray(mainVAO);
-            //загрузить данные в буфер
-            gl.BindBuffer(OpenGL.GL_ARRAY_BUFFER, VBO);
-            gl.BindBuffer(OpenGL.GL_ELEMENT_ARRAY_BUFFER, VIO);
-            
-            // данные о вершинах 
-            gl.BufferData(OpenGL.GL_ARRAY_BUFFER, vertices.ToArray(), OpenGL.GL_DYNAMIC_DRAW);
-            // массив индексов
-            uint[] indexes = _figure.GetEnumerationOfVertexes().ToArray();
-            gl.BufferData(OpenGL.GL_ELEMENT_ARRAY_BUFFER, indexes, OpenGL.GL_DYNAMIC_DRAW);
-            
-            gl.VertexAttribPointer(0, 3, OpenGL.GL_FLOAT, false, 3 * sizeof(float), IntPtr.Zero);
-            gl.EnableVertexAttribArray(0);
-
+                //загрузить данные в буфер
+                gl.BindBuffer(OpenGL.GL_ARRAY_BUFFER, VBO);
+                gl.BindBuffer(OpenGL.GL_ELEMENT_ARRAY_BUFFER, VIO);
+                
+                // данные о вершинах 
+                gl.BufferData(OpenGL.GL_ARRAY_BUFFER, vertices.ToArray(), OpenGL.GL_DYNAMIC_DRAW);
+                // массив индексов
+                uint[] indexes = _figure.GetEnumerationOfVertexes().ToArray();
+                gl.BufferData(OpenGL.GL_ELEMENT_ARRAY_BUFFER, indexes, OpenGL.GL_DYNAMIC_DRAW);
+                
+                gl.VertexAttribPointer((uint)gl.GetAttribLocation(shaderProgram, "position"), 3, OpenGL.GL_FLOAT, false, 3 * sizeof(float), IntPtr.Zero);
+                gl.EnableVertexAttribArray((uint)gl.GetAttribLocation(shaderProgram, "position"));
+            gl.BindVertexArray(0);
+            gl.BindVertexArray(normalsVAO);
+                List<float> normalVertices = new List<float>();
+                List<uint> normalIndexes = new List<uint>();
+                uint cnt = 0;
+                for (int i = 0; i < _figure.Polygons.Count; ++i)
+                {
+                    Vector4 center = _figure.Polygons[i].CalculateCenter();
+                    Vector4 normal = _figure.Polygons[i].CalculateNormal();
+                        
+                    normalVertices.Add(center.X);
+                    normalVertices.Add(center.Y);
+                    normalVertices.Add(center.Z);
+                    
+                    normalIndexes.Add(cnt);
+                    ++cnt;
+                    // normalVertices.Add(0);
+                    // normalVertices.Add(0);
+                    // normalVertices.Add(0);
+                    // normalIndexes.Add(cnt);
+                    // ++cnt;
+                        
+                    normalVertices.Add(center.X + 0.2f * normal.X);
+                    normalVertices.Add(center.Y + 0.2f * normal.Y);
+                    normalVertices.Add(center.Z + 0.2f * normal.Z);
+                    
+                    normalIndexes.Add(cnt);
+                    ++cnt;
+                }
+                
+                gl.BindBuffer(OpenGL.GL_ARRAY_BUFFER, normalsVBO);
+                gl.BindBuffer(OpenGL.GL_ELEMENT_ARRAY_BUFFER, normalsVIO);
+                
+                gl.BufferData(OpenGL.GL_ARRAY_BUFFER, normalVertices.ToArray(), OpenGL.GL_DYNAMIC_DRAW);
+                gl.BufferData(OpenGL.GL_ELEMENT_ARRAY_BUFFER, normalIndexes.ToArray(), OpenGL.GL_DYNAMIC_DRAW);
+                gl.VertexAttribPointer((uint)gl.GetAttribLocation(polygonNormalsShaderProgram, "position"), 3, OpenGL.GL_FLOAT, false, 3 * sizeof(float), IntPtr.Zero);
+                gl.EnableVertexAttribArray((uint)gl.GetAttribLocation(polygonNormalsShaderProgram, "position"));
             gl.BindVertexArray(0);
             
             //настройка параметров 
@@ -504,10 +570,7 @@ namespace CG
                 gl.ClearStencil(0);
 
                 int transformationMatrixLocation = gl.GetUniformLocation(shaderProgram, "tramsformation");
-                updateTranformationMatrixAdjustments();
                 gl.UniformMatrix4(transformationMatrixLocation, 1, false,  ToArray(_cameraTransformationMatrix));
-                
-                
 
                 #region отрисовка с разными опциями
 
@@ -549,7 +612,7 @@ namespace CG
                 {
                     gl.Disable(OpenGL.GL_CULL_FACE);
                     
-                    gl.Uniform1(gl.GetUniformLocation(shaderProgram, "colorMode"), 1, new int[] {(int)FragmetShaderColorMode.Green});
+                    gl.Uniform1(gl.GetUniformLocation(shaderProgram, "ColorMode"), 1, new int[] {(int)FragmetShaderColorMode.Green});
                     gl.PolygonMode(OpenGL.GL_FRONT_AND_BACK, OpenGL.GL_LINE);
                     gl.DrawElements(OpenGL.GL_TRIANGLES, indexes.Length, OpenGL.GL_UNSIGNED_INT, IntPtr.Zero);
                 }
@@ -557,19 +620,19 @@ namespace CG
                 {
                     gl.Enable(OpenGL.GL_CULL_FACE);
                     
-                    gl.Uniform1(gl.GetUniformLocation(shaderProgram, "colorMode"), 1, new int[] {(int)FragmetShaderColorMode.Green});
+                    gl.Uniform1(gl.GetUniformLocation(shaderProgram, "ColorMode"), 1, new int[] {(int)FragmetShaderColorMode.Green});
                     gl.PolygonMode(OpenGL.GL_FRONT_AND_BACK, OpenGL.GL_LINE);
                     gl.DrawElements(OpenGL.GL_TRIANGLES, indexes.Length, OpenGL.GL_UNSIGNED_INT, IntPtr.Zero);
                 }
                 else if (!_allowWireframe.Active && _allowInvisPoly.Active)
                 {
                     gl.Disable(OpenGL.GL_CULL_FACE);
-
-                    gl.Uniform1(gl.GetUniformLocation(shaderProgram, "colorMode"), 1, new int[] {(int)FragmetShaderColorMode.DarkBlue});
+                
+                    gl.Uniform1(gl.GetUniformLocation(shaderProgram, "ColorMode"), 1, new int[] {(int)FragmetShaderColorMode.DarkBlue});
                     gl.PolygonMode(OpenGL.GL_FRONT_AND_BACK, OpenGL.GL_FILL);
                     gl.DrawElements(OpenGL.GL_TRIANGLES, indexes.Length, OpenGL.GL_UNSIGNED_INT, IntPtr.Zero);
                     
-                    gl.Uniform1(gl.GetUniformLocation(shaderProgram, "colorMode"), 1, new int[] {(int)FragmetShaderColorMode.Green});
+                    gl.Uniform1(gl.GetUniformLocation(shaderProgram, "ColorMode"), 1, new int[] {(int)FragmetShaderColorMode.Green});
                     gl.PolygonMode(OpenGL.GL_FRONT_AND_BACK, OpenGL.GL_LINE);
                     gl.DrawElements(OpenGL.GL_TRIANGLES, indexes.Length, OpenGL.GL_UNSIGNED_INT, IntPtr.Zero);
                 }
@@ -577,16 +640,30 @@ namespace CG
                 {
                     gl.Enable(OpenGL.GL_CULL_FACE);
                     
-                    gl.Uniform1(gl.GetUniformLocation(shaderProgram, "colorMode"), 1, new int[] {(int)FragmetShaderColorMode.DarkBlue});
+                    gl.Uniform1(gl.GetUniformLocation(shaderProgram, "ColorMode"), 1, new int[] {(int)FragmetShaderColorMode.DarkBlue});
                     gl.PolygonMode(OpenGL.GL_FRONT_AND_BACK, OpenGL.GL_FILL);
                     gl.DrawElements(OpenGL.GL_TRIANGLES, indexes.Length, OpenGL.GL_UNSIGNED_INT, IntPtr.Zero);
                     
-                    gl.Uniform1(gl.GetUniformLocation(shaderProgram, "colorMode"), 1, new int[] {(int)FragmetShaderColorMode.Green});
+                    gl.Uniform1(gl.GetUniformLocation(shaderProgram, "ColorMode"), 1, new int[] {(int)FragmetShaderColorMode.Green});
                     gl.PolygonMode(OpenGL.GL_FRONT_AND_BACK, OpenGL.GL_LINE);
                     gl.DrawElements(OpenGL.GL_TRIANGLES, indexes.Length, OpenGL.GL_UNSIGNED_INT, IntPtr.Zero);
                 }
 
+                if (_allowNormals.Active)
+                {
+                    gl.UseProgram(polygonNormalsShaderProgram);
+                    gl.BindVertexArray(normalsVAO);
+                    
+                    transformationMatrixLocation = gl.GetUniformLocation(polygonNormalsShaderProgram, "tramsformation");
+                    gl.UniformMatrix4(transformationMatrixLocation, 1, false,  ToArray(_cameraTransformationMatrix));
+                    gl.Uniform1(gl.GetUniformLocation(polygonNormalsShaderProgram, "ColorMode"), 1, new int[] {(int)FragmetShaderColorMode.Blue});
+                    gl.PolygonMode(OpenGL.GL_FRONT_AND_BACK, OpenGL.GL_LINE);
+                    gl.DrawElements(OpenGL.GL_LINES, normalIndexes.Count, OpenGL.GL_UNSIGNED_INT, IntPtr.Zero);
+                    // gl.DrawArrays(OpenGL.GL_LINE_STRIP, 0, _figure.Polygons.Count);
+                }
+
                 #endregion
+                
                 gl.BindVertexArray(0);
             };
             

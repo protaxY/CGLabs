@@ -1,6 +1,6 @@
 {
   "version": 2,
-  "dgSpecHash": "bofJ2dQJjpONRNB8c6KWwVbcNyxhUCegoyKrX3zJSAlx3QVimbg8PKRq/Q/XBVgoUSMQrFNnOMYyxIHz8pML6A==",
+  "dgSpecHash": "jFPC+Wt8IlnIXWaB/C6qxoxmPnVvqveQ75WsMrq4JSdUAf/jDT5OEZFKsal62u1DfwVKuDAhzspz1he8+esIeQ==",
   "success": true,
   "projectFilePath": "C:\\Users\\prota\\Desktop\\CGLabs\\CGLab3\\CGLab3.csproj",
   "expectedPackageFiles": [
@@ -10,8 +10,7 @@
     "C:\\Users\\prota\\.nuget\\packages\\giosharp\\3.24.24.34\\giosharp.3.24.24.34.nupkg.sha512",
     "C:\\Users\\prota\\.nuget\\packages\\glibsharp\\3.24.24.34\\glibsharp.3.24.24.34.nupkg.sha512",
     "C:\\Users\\prota\\.nuget\\packages\\gtksharp\\3.24.24.34\\gtksharp.3.24.24.34.nupkg.sha512",
-    "C:\\Users\\prota\\.nuget\\packages\\pangosharp\\3.24.24.34\\pangosharp.3.24.24.34.nupkg.sha512",
-    "C:\\Users\\prota\\.nuget\\packages\\microsoft.netcore.app.ref\\5.0.0\\microsoft.netcore.app.ref.5.0.0.nupkg.sha512"
+    "C:\\Users\\prota\\.nuget\\packages\\pangosharp\\3.24.24.34\\pangosharp.3.24.24.34.nupkg.sha512"
   ],
   "logs": []
 }

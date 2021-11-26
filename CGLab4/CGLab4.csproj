@@ -18,6 +18,8 @@
         <EmbeddedResource Include="shader.frag" />
         <None Remove="shader.vert" />
         <EmbeddedResource Include="shader.vert" />
+        <None Remove="polygon_normals.geom" />
+        <EmbeddedResource Include="polygon_normals.geom" />
     </ItemGroup>
 
     <ItemGroup>
