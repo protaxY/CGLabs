@@ -10,7 +10,8 @@ namespace CG
         public uint Id;
         public Vector4 Position = new Vector4();
         public List<Polygon> Polygons = new List<Polygon>();
-        public Vector3 Color = new Vector3(0.57f, 0.81f, 0.21f);
+        // public Vector3 Color = new Vector3(0.57f, 0.81f, 0.21f);
+        public Vector3 Color = new Vector3(1, 1, 1);
 
         public Vertex(float x, float y, float z, uint id)
         {

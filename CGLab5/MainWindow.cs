@@ -39,7 +39,6 @@ namespace CG
         [UI] private Adjustment _FOV = null;
         [UI] private Adjustment _clipStart = null;
         [UI] private Adjustment _clipEnd = null;
-
         //параметры элипсойда
         [UI] private Adjustment _a = null;
         [UI] private Adjustment _b = null;
@@ -47,13 +46,41 @@ namespace CG
 
         [UI] private Adjustment _meridiansCount = null;
         [UI] private Adjustment _parallelsCount = null;
-
         // опции
         [UI] private CheckButton _allowZBuffer = null;
         [UI] private CheckButton _allowNormals = null;
         [UI] private CheckButton _allowWireframe = null;
         [UI] private CheckButton _allowInvisPoly = null;
-
+        //материал
+        [UI] private Adjustment _materialColorR = null;
+        [UI] private Adjustment _materialColorG = null;
+        [UI] private Adjustment _materialColorB = null;
+        
+        [UI] private Adjustment _k_aR = null;
+        [UI] private Adjustment _k_aG = null;
+        [UI] private Adjustment _k_aB = null;
+        
+        [UI] private Adjustment _k_dR = null;
+        [UI] private Adjustment _k_dG = null;
+        [UI] private Adjustment _k_dB = null;
+        
+        [UI] private Adjustment _k_sR = null;
+        [UI] private Adjustment _k_sG = null;
+        [UI] private Adjustment _k_sB = null;
+        
+        [UI] private Adjustment _p = null;
+        //источник света
+        [UI] private CheckButton _allowPointLightVisible = null;
+            
+        [UI] private Adjustment _pointLightIntensityR = null;
+        [UI] private Adjustment _pointLightIntensityG = null;
+        [UI] private Adjustment _pointLightIntensityB = null;
+        
+        [UI] private Adjustment _pointLightPositionX = null;
+        [UI] private Adjustment _pointLightPositionY = null;
+        [UI] private Adjustment _pointLightPositionZ = null;
+        
+        [UI] private Adjustment _attenuationСoefficient = null;
         #endregion
 
         #region UI матрицы
@@ -80,7 +107,8 @@ namespace CG
         private float _mouseRotationSensitivity = 1f / 1000f;
         private Matrix4x4 _cameraTransformationMatrix;
 
-        private bool _figureChanged = false;
+        private bool _figureChanged = true;
+        private bool _pointLightChanged = true;
 
         #region Мышь
 
@@ -100,7 +128,7 @@ namespace CG
             DarkBlue,
             Green,
             Cyan,
-            White,
+            LightPaint,
             None
         }
 
@@ -203,51 +231,15 @@ namespace CG
                 updateTranformationMatrixAdjustments();
             };
 
-            _a.ValueChanged += (o, args) =>
-            {
-                _figureChanged = true;
-                _figure = new Ellipsoid((float) _a.Value,
-                    (float) _b.Value, (float) _c.Value,
-                    (int) _meridiansCount.Value,
-                    (int) _parallelsCount.Value);
-                _figure.TriangulateSquares();
-            };
-            _b.ValueChanged += (o, args) =>
-            {
-                _figureChanged = true;
-                _figure = new Ellipsoid((float) _a.Value,
-                    (float) _b.Value, (float) _c.Value,
-                    (int) _meridiansCount.Value,
-                    (int) _parallelsCount.Value);
-                _figure.TriangulateSquares();
-            };
-            _c.ValueChanged += (o, args) =>
-            {
-                _figureChanged = true;
-                _figure = new Ellipsoid((float) _a.Value,
-                    (float) _b.Value, (float) _c.Value,
-                    (int) _meridiansCount.Value,
-                    (int) _parallelsCount.Value);
-                _figure.TriangulateSquares();
-            };
-            _meridiansCount.ValueChanged += (o, args) =>
-            {
-                _figureChanged = true;
-                _figure = new Ellipsoid((float) _a.Value,
-                    (float) _b.Value, (float) _c.Value,
-                    (int) _meridiansCount.Value,
-                    (int) _parallelsCount.Value);
-                _figure.TriangulateSquares();
-            };
-            _parallelsCount.ValueChanged += (o, args) =>
-            {
-                _figureChanged = true;
-                _figure = new Ellipsoid((float) _a.Value,
-                    (float) _b.Value, (float) _c.Value,
-                    (int) _meridiansCount.Value,
-                    (int) _parallelsCount.Value);
-                _figure.TriangulateSquares();
-            };
+            _a.ValueChanged += (o, args) => {_figureChanged = true;};
+            _b.ValueChanged += (o, args) => {_figureChanged = true;};
+            _c.ValueChanged += (o, args) => {_figureChanged = true;};
+            _meridiansCount.ValueChanged += (o, args) => {_figureChanged = true;};
+            _parallelsCount.ValueChanged += (o, args) => {_figureChanged = true;};
+            
+            _pointLightPositionX.ValueChanged += (o, args) => { _pointLightChanged = true;};
+            _pointLightPositionY.ValueChanged += (o, args) => { _pointLightChanged = true;};
+            _pointLightPositionZ.ValueChanged += (o, args) => { _pointLightChanged = true;};
 
             #endregion
 
@@ -481,67 +473,49 @@ namespace CG
             }
             
             // создать объект вершинного массива
-            uint[] arrays = new uint[2];
+            uint[] arrays = new uint[3];
             gl.GenVertexArrays(2, arrays);
             uint mainVAO = arrays[0];
             uint normalsVAO = arrays[1];
+            uint pointLightVAO = arrays[2];
             
             // создать буффер вершин
-            uint[] buffers = new uint[4];
-            gl.GenBuffers(4, buffers);
+            uint[] buffers = new uint[5];
+            gl.GenBuffers(5, buffers);
             uint VBO = buffers[0];
             uint VIO = buffers[1];
             uint normalsVBO = buffers[2];
             uint normalsVIO = buffers[3];
+            uint pointLightVBO = buffers[4];
+
+            uint[] indexes = new uint[] { };
+            List<uint> normalIndexes = new List<uint>();
             
             gl.BindVertexArray(mainVAO);
                 //загрузить данные в буфер
                 gl.BindBuffer(OpenGL.GL_ARRAY_BUFFER, VBO);
                 gl.BindBuffer(OpenGL.GL_ELEMENT_ARRAY_BUFFER, VIO);
-                
-                // данные о вершинах 
-                gl.BufferData(OpenGL.GL_ARRAY_BUFFER, vertices.ToArray(), OpenGL.GL_DYNAMIC_DRAW);
-                // массив индексов
-                uint[] indexes = _figure.GetEnumerationOfVertexes().ToArray();
-                gl.BufferData(OpenGL.GL_ELEMENT_ARRAY_BUFFER, indexes, OpenGL.GL_DYNAMIC_DRAW);
-                
-                gl.VertexAttribPointer((uint)gl.GetAttribLocation(shaderProgram, "position"), 3, OpenGL.GL_FLOAT, false, 3 * sizeof(float), IntPtr.Zero);
+                gl.VertexAttribPointer((uint)gl.GetAttribLocation(shaderProgram, "position"), 3, OpenGL.GL_FLOAT, false, 9 * sizeof(float), IntPtr.Zero);
+                gl.VertexAttribPointer((uint)gl.GetAttribLocation(shaderProgram, "inColor"), 3, OpenGL.GL_FLOAT, false, 9 * sizeof(float), (IntPtr)(3 * sizeof(float)));
+                gl.VertexAttribPointer((uint)gl.GetAttribLocation(shaderProgram, "normal"), 3, OpenGL.GL_FLOAT, false, 9 * sizeof(float), (IntPtr)(6 * sizeof(float)));
                 gl.EnableVertexAttribArray((uint)gl.GetAttribLocation(shaderProgram, "position"));
+                gl.EnableVertexAttribArray((uint)gl.GetAttribLocation(shaderProgram, "inColor"));
+                gl.EnableVertexAttribArray((uint)gl.GetAttribLocation(shaderProgram, "normal"));
             gl.BindVertexArray(0);
             gl.BindVertexArray(normalsVAO);
-                List<float> normalVertices = new List<float>();
-                List<uint> normalIndexes = new List<uint>();
-                uint cnt = 0;
-                for (int i = 0; i < _figure.Polygons.Count; ++i)
-                {
-                    Vector4 center = _figure.Polygons[i].CalculateCenter();
-                    Vector4 normal = _figure.Polygons[i].CalculateNormal();
-                        
-                    normalVertices.Add(center.X);
-                    normalVertices.Add(center.Y);
-                    normalVertices.Add(center.Z);
-                    
-                    normalIndexes.Add(cnt);
-                    ++cnt;
-
-                    normalVertices.Add(center.X + 0.2f * normal.X);
-                    normalVertices.Add(center.Y + 0.2f * normal.Y);
-                    normalVertices.Add(center.Z + 0.2f * normal.Z);
-                    
-                    normalIndexes.Add(cnt);
-                    ++cnt;
-                }
-                
                 gl.BindBuffer(OpenGL.GL_ARRAY_BUFFER, normalsVBO);
                 gl.BindBuffer(OpenGL.GL_ELEMENT_ARRAY_BUFFER, normalsVIO);
-                
-                gl.BufferData(OpenGL.GL_ARRAY_BUFFER, normalVertices.ToArray(), OpenGL.GL_DYNAMIC_DRAW);
-                gl.BufferData(OpenGL.GL_ELEMENT_ARRAY_BUFFER, normalIndexes.ToArray(), OpenGL.GL_DYNAMIC_DRAW);
                 gl.VertexAttribPointer((uint)gl.GetAttribLocation(polygonNormalsShaderProgram, "position"), 3, OpenGL.GL_FLOAT, false, 3 * sizeof(float), IntPtr.Zero);
                 gl.EnableVertexAttribArray((uint)gl.GetAttribLocation(polygonNormalsShaderProgram, "position"));
             gl.BindVertexArray(0);
-            
-            //настройка параметров 
+            gl.BindVertexArray(pointLightVAO);
+                gl.BindBuffer(OpenGL.GL_ARRAY_BUFFER, pointLightVBO);
+                gl.VertexAttribPointer((uint)gl.GetAttribLocation(shaderProgram, "position"), 3, OpenGL.GL_FLOAT, false, 3 * sizeof(float), IntPtr.Zero);
+                gl.EnableVertexAttribArray((uint)gl.GetAttribLocation(shaderProgram, "position"));
+            gl.BindVertexArray(0);
+
+            #region настройка параметров
+
             gl.FrontFace(OpenGL.GL_CW);
             
             gl.Enable(OpenGL.GL_DEPTH_TEST);
@@ -552,12 +526,11 @@ namespace CG
             
             gl.Enable(OpenGL.GL_CULL_FACE);
             gl.CullFace(OpenGL.GL_BACK);
-            
-            // gl.Enable(OpenGL.GL_LINE_SMOOTH);
-            // gl.Hint(OpenGL.GL_LINE_SMOOTH_HINT, OpenGL.GL_NICEST);
-            
+
             gl.ClearColor(0.2f, 0.2f, 0.2f, 1);
-            
+
+            #endregion
+
             glArea.Render += (o, args) =>
             {
                 gl.UseProgram(shaderProgram);
@@ -565,70 +538,123 @@ namespace CG
                 gl.Clear(OpenGL.GL_COLOR_BUFFER_BIT | OpenGL.GL_DEPTH_BUFFER_BIT);
                 gl.ClearDepth(1.0f); // 0 - ближе, 1 - далеко 
                 gl.ClearStencil(0);
-
-                int transformationMatrixLocation = gl.GetUniformLocation(shaderProgram, "tramsformation");
-                gl.UniformMatrix4(transformationMatrixLocation, 1, false,  ToArray(_cameraTransformationMatrix));
-
+                
                 #region отрисовка с разными опциями
 
-                uint[] indexes = new uint[] {};
                 if (_figureChanged)
-                    {
-                        _figureChanged = false;
-                        
-                        #region обновить буферы
+                {
+                    _figureChanged = false;
+                    _figure = new Ellipsoid((float) _a.Value,
+                        (float) _b.Value, (float) _c.Value,
+                        (int) _meridiansCount.Value,
+                        (int) _parallelsCount.Value);
+                    _figure.TriangulateSquares();
+                    
+                    #region обновить буферы
 
-                        //перевожу координаты верши в массив float
-                        List<float> vertices = new List<float>();
-                        for (int i = 0; i < _figure.Vertices.Count; ++i)
-                        {
-                            vertices.Add(_figure.Vertices[i].Position.X);
-                            vertices.Add(_figure.Vertices[i].Position.Y);
-                            vertices.Add(_figure.Vertices[i].Position.Z);
-                        }
-                        gl.BindVertexArray(mainVAO);
+                    //перевожу координаты верши в массив float
+                    vertices = new List<float>();
+                    for (int i = 0; i < _figure.Vertices.Count; ++i)
+                    {
+                        vertices.Add(_figure.Vertices[i].Position.X);
+                        vertices.Add(_figure.Vertices[i].Position.Y);
+                        vertices.Add(_figure.Vertices[i].Position.Z);
+
+                        Vector4 normal = _figure.Vertices[i].CalculateNormal();
+                        vertices.Add(normal.X);
+                        vertices.Add(normal.Y);
+                        vertices.Add(normal.Z);
+                        
+                        vertices.Add(_figure.Vertices[i].Color.X);
+                        vertices.Add(_figure.Vertices[i].Color.Y);
+                        vertices.Add(_figure.Vertices[i].Color.Z);
+                    }
+                    gl.BindVertexArray(mainVAO);
+                        gl.BindBuffer(OpenGL.GL_ARRAY_BUFFER, VBO);
+                        gl.BindBuffer(OpenGL.GL_ELEMENT_ARRAY_BUFFER, VIO);
                         // данные о вершинах 
                         gl.BufferData(OpenGL.GL_ARRAY_BUFFER, vertices.ToArray(), OpenGL.GL_DYNAMIC_DRAW);
                         // массив индексов
                         indexes = _figure.GetEnumerationOfVertexes().ToArray();
                         gl.BufferData(OpenGL.GL_ELEMENT_ARRAY_BUFFER, indexes, OpenGL.GL_DYNAMIC_DRAW);
-                        gl.BindVertexArray(0);
-                        // gl.BindVertexArray(normalsVAO);
-                        // List<float> normalVertices = new List<float>();
-                        // List<uint> normalIndexes = new List<uint>();
-                        // uint cnt = 0;
-                        // for (int i = 0; i < _figure.Polygons.Count; ++i)
-                        // {
-                        //     Vector4 center = _figure.Polygons[i].CalculateCenter();
-                        //     Vector4 normal = _figure.Polygons[i].CalculateNormal();
-                        //
-                        //     normalVertices.Add(center.X);
-                        //     normalVertices.Add(center.Y);
-                        //     normalVertices.Add(center.Z);
-                        //
-                        //     normalIndexes.Add(cnt);
-                        //     ++cnt;
-                        //
-                        //     normalVertices.Add(center.X + 0.2f * normal.X);
-                        //     normalVertices.Add(center.Y + 0.2f * normal.Y);
-                        //     normalVertices.Add(center.Z + 0.2f * normal.Z);
-                        //
-                        //     normalIndexes.Add(cnt);
-                        //     ++cnt;
-                        // }
-                        //
-                        // gl.BindBuffer(OpenGL.GL_ARRAY_BUFFER, normalsVBO);
-                        // gl.BindBuffer(OpenGL.GL_ELEMENT_ARRAY_BUFFER, normalsVIO);
-                        //
-                        // gl.BufferData(OpenGL.GL_ARRAY_BUFFER, normalVertices.ToArray(), OpenGL.GL_DYNAMIC_DRAW);
-                        // gl.BufferData(OpenGL.GL_ELEMENT_ARRAY_BUFFER, normalIndexes.ToArray(), OpenGL.GL_DYNAMIC_DRAW);
-                        // gl.VertexAttribPointer((uint)gl.GetAttribLocation(polygonNormalsShaderProgram, "position"), 3, OpenGL.GL_FLOAT, false, 3 * sizeof(float), IntPtr.Zero);
-                        // gl.EnableVertexAttribArray((uint)gl.GetAttribLocation(polygonNormalsShaderProgram, "position"));
-                        // gl.BindVertexArray(0);
+                    gl.BindVertexArray(0);
+                    gl.BindVertexArray(normalsVAO);
+                        List<float> normalVertices = new List<float>();
+                        normalIndexes = new List<uint>();
+                        uint cnt = 0;
+                        for (int i = 0; i < _figure.Polygons.Count; ++i)
+                        {
+                            Vector4 center = _figure.Polygons[i].CalculateCenter();
+                            Vector4 normal = _figure.Polygons[i].CalculateNormal();
+                            
+                            normalVertices.Add(center.X);
+                            normalVertices.Add(center.Y);
+                            normalVertices.Add(center.Z);
                         
-                        #endregion
-                    }
+                            normalIndexes.Add(cnt);
+                            ++cnt;
 
+                            normalVertices.Add(center.X + 0.2f * normal.X);
+                            normalVertices.Add(center.Y + 0.2f * normal.Y);
+                            normalVertices.Add(center.Z + 0.2f * normal.Z);
+                        
+                            normalIndexes.Add(cnt);
+                            ++cnt;
+                        }
+                    
+                        gl.BindBuffer(OpenGL.GL_ARRAY_BUFFER, normalsVBO);
+                        gl.BindBuffer(OpenGL.GL_ELEMENT_ARRAY_BUFFER, normalsVIO);
+                    
+                        gl.BufferData(OpenGL.GL_ARRAY_BUFFER, normalVertices.ToArray(), OpenGL.GL_DYNAMIC_DRAW);
+                        gl.BufferData(OpenGL.GL_ELEMENT_ARRAY_BUFFER, normalIndexes.ToArray(), OpenGL.GL_DYNAMIC_DRAW);
+                        gl.VertexAttribPointer((uint)gl.GetAttribLocation(polygonNormalsShaderProgram, "position"), 3, OpenGL.GL_FLOAT, false, 3 * sizeof(float), IntPtr.Zero);
+                        gl.EnableVertexAttribArray((uint)gl.GetAttribLocation(polygonNormalsShaderProgram, "position"));
+                    gl.BindVertexArray(0);
+
+                    #endregion
+                }
+
+                if (_pointLightChanged)
+                {
+                    _pointLightChanged = false;
+                    _pointLight = new PointLight((float) _pointLightPositionX.Value,
+                                                 (float) _pointLightPositionY.Value,
+                                                 (float) _pointLightPositionZ.Value,
+                                                 (float) _pointLightIntensityR.Value,
+                                                 (float) _pointLightIntensityG.Value,
+                                                 (float) _pointLightIntensityB.Value);
+
+                    #region обновить буферы
+
+                    gl.BindVertexArray(pointLightVAO);
+                    gl.BindBuffer(OpenGL.GL_ARRAY_BUFFER, pointLightVBO);
+                    float[] position = {_pointLight.Position.X, _pointLight.Position.Y, _pointLight.Position.Z};
+                    gl.BufferData(OpenGL.GL_ARRAY_BUFFER, position, OpenGL.GL_DYNAMIC_DRAW);
+                    gl.BindVertexArray(0);
+                    
+                    #endregion
+                }
+                
+                int transformationMatrixLocation = gl.GetUniformLocation(shaderProgram, "transformation");
+                int materialK_aLocation = gl.GetUniformLocation(shaderProgram, "material.k_a");
+                int materialK_dLocation = gl.GetUniformLocation(shaderProgram, "material.k_d");
+                int materialK_sLocation = gl.GetUniformLocation(shaderProgram, "material.k_s");
+                int materialPLocation = gl.GetUniformLocation(shaderProgram, "material.p");
+                int lightIntensityLocation = gl.GetUniformLocation(shaderProgram, "light.intensity");
+                int lightPositionLocation = gl.GetUniformLocation(shaderProgram, "light.position");
+                int lightAttenuationLocation = gl.GetUniformLocation(shaderProgram, "light.attenuation");
+                int cameraPositionLocation = gl.GetUniformLocation(shaderProgram, "cameraPosition");
+                
+                gl.UniformMatrix4(transformationMatrixLocation, 1, false,  ToArray(_cameraTransformationMatrix));
+                gl.Uniform3(materialK_aLocation, (float)_k_aR.Value, (float)_k_aG.Value, (float)_k_aB.Value);
+                gl.Uniform3(materialK_dLocation, (float)_k_dR.Value, (float)_k_dG.Value, (float)_k_dB.Value);
+                gl.Uniform3(materialK_sLocation, (float)_k_sR.Value, (float)_k_sG.Value, (float)_k_sB.Value);
+                gl.Uniform1(materialPLocation, (float)_p.Value);
+                gl.Uniform3(lightIntensityLocation, (float)_pointLightIntensityR.Value, (float)_pointLightIntensityG.Value, (float)_pointLightIntensityB.Value);
+                gl.Uniform3(lightPositionLocation, (float)_pointLightPositionX.Value, (float)_pointLightPositionY.Value, (float)_pointLightPositionZ.Value);
+                gl.Uniform1(lightAttenuationLocation, (float)_attenuationСoefficient.Value);
+                gl.Uniform3(cameraPositionLocation, _camera.Position.X, _camera.Position.Y, _camera.Position.Z);
+                
                 gl.BindVertexArray(mainVAO);
                     if (_allowZBuffer.Active)
                     {
@@ -642,7 +668,7 @@ namespace CG
                     {
                         gl.Disable(OpenGL.GL_CULL_FACE);
                         
-                        gl.Uniform1(gl.GetUniformLocation(shaderProgram, "ColorMode"), 1, new int[] {(int)FragmetShaderColorMode.Green});
+                        gl.Uniform1(gl.GetUniformLocation(shaderProgram, "colorMode"), 1, new int[] {(int)FragmetShaderColorMode.Green});
                         gl.PolygonMode(OpenGL.GL_FRONT_AND_BACK, OpenGL.GL_LINE);
                         gl.DrawElements(OpenGL.GL_TRIANGLES, indexes.Length, OpenGL.GL_UNSIGNED_INT, IntPtr.Zero);
                     }
@@ -650,7 +676,7 @@ namespace CG
                     {
                         gl.Enable(OpenGL.GL_CULL_FACE);
                         
-                        gl.Uniform1(gl.GetUniformLocation(shaderProgram, "ColorMode"), 1, new int[] {(int)FragmetShaderColorMode.Green});
+                        gl.Uniform1(gl.GetUniformLocation(shaderProgram, "colorMode"), 1, new int[] {(int)FragmetShaderColorMode.Green});
                         gl.PolygonMode(OpenGL.GL_FRONT_AND_BACK, OpenGL.GL_LINE);
                         gl.DrawElements(OpenGL.GL_TRIANGLES, indexes.Length, OpenGL.GL_UNSIGNED_INT, IntPtr.Zero);
                     }
@@ -658,40 +684,50 @@ namespace CG
                     {
                         gl.Disable(OpenGL.GL_CULL_FACE);
                     
-                        gl.Uniform1(gl.GetUniformLocation(shaderProgram, "ColorMode"), 1, new int[] {(int)FragmetShaderColorMode.DarkBlue});
+                        gl.Uniform1(gl.GetUniformLocation(shaderProgram, "colorMode"), 1, new int[] {(int)FragmetShaderColorMode.None});
                         gl.PolygonMode(OpenGL.GL_FRONT_AND_BACK, OpenGL.GL_FILL);
                         gl.DrawElements(OpenGL.GL_TRIANGLES, indexes.Length, OpenGL.GL_UNSIGNED_INT, IntPtr.Zero);
                         
-                        gl.Uniform1(gl.GetUniformLocation(shaderProgram, "ColorMode"), 1, new int[] {(int)FragmetShaderColorMode.Green});
-                        gl.PolygonMode(OpenGL.GL_FRONT_AND_BACK, OpenGL.GL_LINE);
-                        gl.DrawElements(OpenGL.GL_TRIANGLES, indexes.Length, OpenGL.GL_UNSIGNED_INT, IntPtr.Zero);
+                        // gl.Uniform1(gl.GetUniformLocation(shaderProgram, "colorMode"), 1, new int[] {(int)FragmetShaderColorMode.Green});
+                        // gl.PolygonMode(OpenGL.GL_FRONT_AND_BACK, OpenGL.GL_LINE);
+                        // gl.DrawElements(OpenGL.GL_TRIANGLES, indexes.Length, OpenGL.GL_UNSIGNED_INT, IntPtr.Zero);
                     }
                     else if (!_allowWireframe.Active && !_allowInvisPoly.Active)
                     {
                         gl.Enable(OpenGL.GL_CULL_FACE);
                         
-                        gl.Uniform1(gl.GetUniformLocation(shaderProgram, "ColorMode"), 1, new int[] {(int)FragmetShaderColorMode.DarkBlue});
+                        gl.Uniform1(gl.GetUniformLocation(shaderProgram, "colorMode"), 1, new int[] {(int)FragmetShaderColorMode.None});
                         gl.PolygonMode(OpenGL.GL_FRONT_AND_BACK, OpenGL.GL_FILL);
                         gl.DrawElements(OpenGL.GL_TRIANGLES, indexes.Length, OpenGL.GL_UNSIGNED_INT, IntPtr.Zero);
                         
-                        gl.Uniform1(gl.GetUniformLocation(shaderProgram, "ColorMode"), 1, new int[] {(int)FragmetShaderColorMode.Green});
-                        gl.PolygonMode(OpenGL.GL_FRONT_AND_BACK, OpenGL.GL_LINE);
-                        gl.DrawElements(OpenGL.GL_TRIANGLES, indexes.Length, OpenGL.GL_UNSIGNED_INT, IntPtr.Zero);
+                        // gl.Uniform1(gl.GetUniformLocation(shaderProgram, "colorMode"), 1, new int[] {(int)FragmetShaderColorMode.Green});
+                        // gl.PolygonMode(OpenGL.GL_FRONT_AND_BACK, OpenGL.GL_LINE);
+                        // gl.DrawElements(OpenGL.GL_TRIANGLES, indexes.Length, OpenGL.GL_UNSIGNED_INT, IntPtr.Zero);
                     }
                 gl.BindVertexArray(0);
-                
+
                 if (_allowNormals.Active)
                 {
                     gl.UseProgram(polygonNormalsShaderProgram);
-                    gl.BindVertexArray(normalsVAO);
-                        
+                    gl.BindVertexArray(normalsVAO); 
                         transformationMatrixLocation = gl.GetUniformLocation(polygonNormalsShaderProgram, "tramsformation");
                         gl.UniformMatrix4(transformationMatrixLocation, 1, false,  ToArray(_cameraTransformationMatrix));
-                        gl.Uniform1(gl.GetUniformLocation(polygonNormalsShaderProgram, "ColorMode"), 1, new int[] {(int)FragmetShaderColorMode.Cyan});
+                        gl.Uniform1(gl.GetUniformLocation(polygonNormalsShaderProgram, "colorMode"), 1, new int[] {(int)FragmetShaderColorMode.Cyan});
                         gl.PolygonMode(OpenGL.GL_FRONT_AND_BACK, OpenGL.GL_LINE);
                         gl.DrawElements(OpenGL.GL_LINES, normalIndexes.Count, OpenGL.GL_UNSIGNED_INT, IntPtr.Zero);
                         // gl.DrawArrays(OpenGL.GL_LINE_STRIP, 0, _figure.Polygons.Count);
                     gl.BindVertexArray(0);
+                }
+
+                if (_allowPointLightVisible.Active)
+                {
+                    // gl.UseProgram(shaderProgram);
+                    // gl.BindVertexArray(pointLightVAO);
+                    //     gl.Uniform1(gl.GetUniformLocation(polygonNormalsShaderProgram, "colorMode"), 1, new int[] {(int)FragmetShaderColorMode.LightPaint});
+                    //     gl.PolygonMode(OpenGL.GL_FRONT_AND_BACK, OpenGL.GL_LINE);
+                    //     gl.PointSize(10);
+                    //     gl.DrawArrays(OpenGL.GL_POINTS, 0, 1);
+                    // gl.BindVertexArray(0);
                 }
 
                 #endregion
