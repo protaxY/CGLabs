@@ -638,6 +638,7 @@ namespace CG
                     gl.PolygonMode(OpenGL.GL_FRONT_AND_BACK, OpenGL.GL_LINE);
                     gl.DrawElements(OpenGL.GL_LINES, normalIndexes.Count, OpenGL.GL_UNSIGNED_INT, IntPtr.Zero);
                     // gl.DrawArrays(OpenGL.GL_LINE_STRIP, 0, _figure.Polygons.Count);
+                    gl.BindVertexArray(0);
                 }
 
                 #endregion

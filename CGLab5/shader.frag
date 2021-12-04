@@ -47,20 +47,21 @@ void main()
 		vec3 L = light.position - fragCoord;
 		vec3 N = normal;
 		float cosLN = dot(L, N) / (length(L) * length(N));
-//		vec3 I_d = material.k_d * light.intensity * max(0, cosLN);
-		vec3 I_d = material.k_d * light.intensity * cosLN;
+		vec3 I_d = material.k_d * light.intensity * max(0, cosLN);
+		I_d /= pow(length(L), 2) * light.attenuation;
 		//отраженная составляющая
-//		vec3 I_s;
-//		if (cosLN > 0){
-//			vec3 cameraDirection = normalize(fragCoord - cameraPosition);
-//			vec3 normalizedL = normalize(L);
-//			vec3 R = ((cosLN * N) - normalizedL) + N * cosLN;
-//			vec3 S = normalize(cameraDirection);
-//			float cosRSp = pow(max(0, normalize(dot(R, S))), material.p);
-//			I_s = material.k_s * light.intensity * cosRSp;
-//		} else {
-//			I_s = vec3(0, 0, 0);
-//		}
-		fragColor = vec4((I_a + I_d), 1);
+		vec3 I_s;
+		if (cosLN > 0){
+			vec3 cameraDirection = normalize(cameraPosition - fragCoord);
+			vec3 normalizedL = normalize(L);
+			vec3 R = ((cosLN * N) - normalizedL) + N * cosLN;
+			vec3 S = normalize(cameraDirection);
+			float cosRSp = pow(max(0, dot(R, S) / (length(R) * length(S))), material.p);
+			I_s = material.k_s * light.intensity * cosRSp;
+			I_s /= pow(length(L), 2) * light.attenuation;
+		} else {
+			I_s = vec3(0, 0, 0);
+		}
+		fragColor = vec4((I_a + I_d + I_s) * color, 1);
 	}
 }

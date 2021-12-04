@@ -12,7 +12,7 @@ namespace CG
             Position = position;
         }
 
-        public PointLight(float x, float y, float z, float intensityR, float intensityG, float intensityB)
+        public PointLight(float x, float y, float z)
         {
             Position = new Vector4(x, y, z, 1);
         }
