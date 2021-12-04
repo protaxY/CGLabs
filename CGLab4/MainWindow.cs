@@ -18,14 +18,7 @@ namespace CG
     class MainWindow : Window
     {
         [UI] private GLArea _glArea = null;
-        // private OpenGL gl = null;
-        // // вершинные массивы
-        // private uint mainVAO;
-        // private uint normalsVAO;
-        // // буферы
-        // private uint VBO;
-        // private uint VIO;
-        
+
         #region UI спинбаттонов и чекбоксов
         //камера
         [UI] private Adjustment _xPosition = null;
@@ -88,13 +81,7 @@ namespace CG
         private uint _mousePressedButton;
 
         #endregion
-        
-        private enum Shading
-        {
-            Flat,
-            Gouraud
-        }
-        
+
         private enum FragmetShaderColorMode
         {
             DarkBlue,

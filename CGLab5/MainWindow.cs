@@ -18,14 +18,7 @@ namespace CG
     class MainWindow : Window
     {
         [UI] private GLArea _glArea = null;
-        // private OpenGL gl = null;
-        // // вершинные массивы
-        // private uint mainVAO;
-        // private uint normalsVAO;
-        // // буферы
-        // private uint VBO;
-        // private uint VIO;
-        
+
         #region UI спинбаттонов и чекбоксов
         //камера
         [UI] private Adjustment _xPosition = null;
@@ -116,13 +109,7 @@ namespace CG
         private uint _mousePressedButton;
 
         #endregion
-        
-        private enum Shading
-        {
-            Flat,
-            Gouraud
-        }
-        
+
         private enum FragmetShaderColorMode
         {
             DarkBlue,
@@ -237,10 +224,14 @@ namespace CG
             _meridiansCount.ValueChanged += (o, args) => {_figureChanged = true;};
             _parallelsCount.ValueChanged += (o, args) => {_figureChanged = true;};
             
-            _pointLightPositionX.ValueChanged += (o, args) => { _pointLightChanged = true;};
-            _pointLightPositionY.ValueChanged += (o, args) => { _pointLightChanged = true;};
-            _pointLightPositionZ.ValueChanged += (o, args) => { _pointLightChanged = true;};
+            _pointLightPositionX.ValueChanged += (o, args) => {_pointLightChanged = true;};
+            _pointLightPositionY.ValueChanged += (o, args) => {_pointLightChanged = true;};
+            _pointLightPositionZ.ValueChanged += (o, args) => {_pointLightChanged = true;};
 
+            _materialColorR.ValueChanged += (o, args) => {_figureChanged = true;};
+            _materialColorG.ValueChanged += (o, args) => {_figureChanged = true;};
+            _materialColorB.ValueChanged += (o, args) => {_figureChanged = true;};
+            
             #endregion
 
             #region Обработка матрицы
@@ -542,7 +533,7 @@ namespace CG
                 gl.ClearStencil(0);
                 
                 #region отрисовка с разными опциями
-
+                
                 if (_figureChanged)
                 {
                     _figureChanged = false;
@@ -551,6 +542,9 @@ namespace CG
                         (int) _meridiansCount.Value,
                         (int) _parallelsCount.Value);
                     _figure.TriangulateSquares();
+                    _figure.SetColor((float) _materialColorR.Value,
+                                     (float) _materialColorG.Value,
+                                     (float) _materialColorB.Value);
                     
                     #region обновить буферы
 
@@ -612,7 +606,6 @@ namespace CG
 
                     #endregion
                 }
-
                 if (_pointLightChanged)
                 {
                     _pointLightChanged = false;
@@ -628,7 +621,7 @@ namespace CG
                     
                     #endregion
                 }
-                
+
                 int transformationMatrixLocation = gl.GetUniformLocation(shaderProgram, "transformation");
                 int materialK_aLocation = gl.GetUniformLocation(shaderProgram, "material.k_a");
                 int materialK_dLocation = gl.GetUniformLocation(shaderProgram, "material.k_d");
