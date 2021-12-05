@@ -572,7 +572,7 @@ namespace CG
                     else if (!_allowZBuffer.Active)
                         gl.Disable(OpenGL.GL_DEPTH_TEST);
                     
-                    if (_allowWireframe.Active && _allowInvisPoly.Active)
+                    if (_allowWireframe.Active && !_allowInvisPoly.Active)
                     {
                         gl.Disable(OpenGL.GL_CULL_FACE);
                         
@@ -580,7 +580,7 @@ namespace CG
                         gl.PolygonMode(OpenGL.GL_FRONT_AND_BACK, OpenGL.GL_LINE);
                         gl.DrawElements(OpenGL.GL_TRIANGLES, indexes.Length, OpenGL.GL_UNSIGNED_INT, IntPtr.Zero);
                     }
-                    else if (_allowWireframe.Active && !_allowInvisPoly.Active)
+                    else if (_allowWireframe.Active && _allowInvisPoly.Active)
                     {
                         gl.Enable(OpenGL.GL_CULL_FACE);
                         
@@ -588,7 +588,7 @@ namespace CG
                         gl.PolygonMode(OpenGL.GL_FRONT_AND_BACK, OpenGL.GL_LINE);
                         gl.DrawElements(OpenGL.GL_TRIANGLES, indexes.Length, OpenGL.GL_UNSIGNED_INT, IntPtr.Zero);
                     }
-                    else if (!_allowWireframe.Active && _allowInvisPoly.Active)
+                    else if (!_allowWireframe.Active && !_allowInvisPoly.Active)
                     {
                         gl.Disable(OpenGL.GL_CULL_FACE);
                     
@@ -600,7 +600,7 @@ namespace CG
                         gl.PolygonMode(OpenGL.GL_FRONT_AND_BACK, OpenGL.GL_LINE);
                         gl.DrawElements(OpenGL.GL_TRIANGLES, indexes.Length, OpenGL.GL_UNSIGNED_INT, IntPtr.Zero);
                     }
-                    else if (!_allowWireframe.Active && !_allowInvisPoly.Active)
+                    else if (!_allowWireframe.Active && _allowInvisPoly.Active)
                     {
                         gl.Enable(OpenGL.GL_CULL_FACE);
                         
