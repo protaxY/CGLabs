@@ -12,6 +12,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CGPlatform", "CGPlatform\CG
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CGLab5", "CGLab5\CGLab5.csproj", "{02305133-A0B0-4C40-829B-5271E52D76F4}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CGLab6", "CGLab6\CGLab6.csproj", "{BC0E0C23-4B8E-452B-A23A-35AF81E6D7DC}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -42,5 +44,9 @@ Global
 		{02305133-A0B0-4C40-829B-5271E52D76F4}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{02305133-A0B0-4C40-829B-5271E52D76F4}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{02305133-A0B0-4C40-829B-5271E52D76F4}.Release|Any CPU.Build.0 = Release|Any CPU
+		{BC0E0C23-4B8E-452B-A23A-35AF81E6D7DC}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{BC0E0C23-4B8E-452B-A23A-35AF81E6D7DC}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{BC0E0C23-4B8E-452B-A23A-35AF81E6D7DC}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{BC0E0C23-4B8E-452B-A23A-35AF81E6D7DC}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 EndGlobal
