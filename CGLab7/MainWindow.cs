@@ -33,10 +33,10 @@ namespace CG
 
         #region выстраиваивание сцены
 
-        private CardinalSpline cardinalSpline = new CardinalSpline(new Vector4(-0.5f, -0.5f, 0f, 1.0f), 
-                                                                    new Vector4(-0.5f, 0.5f, 0f, 1.0f), 
-                                                                    new Vector4(0.5f, 0.5f, 0f, 1.0f),
-                                                                    new Vector4(-0.5f, -0.5f, 0f, 1.0f));
+        private CardinalSpline cardinalSpline = new CardinalSpline(new Vector4(0.2f, -0.5f, 0f, 1.0f), 
+                                                                    new Vector4(0.4f, 0.5f, 0f, 1.0f), 
+                                                                    new Vector4(0.6f, 0.5f, 0f, 1.0f),
+                                                                    new Vector4(0.8f, -0.5f, 0f, 1.0f));
 
         #endregion
 
@@ -67,7 +67,8 @@ namespace CG
                 _mousePosition.X = (float) args.Event.X;
                 _mousePosition.Y = (float) args.Event.Y;
                 
-                Vector4 position = new Vector4((float) args.Event.X / Window.Width, (float) args.Event.Y / Window.Height, 0f, 0f);
+                Vector4 position = new Vector4((float) (args.Event.X - (float) Window.Width / 2) / ((float) Window.Width / 2), 
+                    (float) -(args.Event.Y - (float) Window.Height / 2) / ((float) Window.Height / 2), 0f, 1.0f);
 
                 minDist = 1000000000;
                 minInd = -1;
@@ -89,8 +90,8 @@ namespace CG
             {
                 Vector3 _currentMousePosition = new Vector3((float) args.Event.X, (float) args.Event.Y, 0);
                 Vector4 position = new Vector4((float) args.Event.X / Window.Width, (float) args.Event.Y / Window.Height, 0f, 0f);
-                Vector4 shift = new Vector4((float) (_currentMousePosition.X - _mousePosition.X) / Window.Width,
-                                            (float) (_currentMousePosition.Y - _mousePosition.Y) / Window.Height, 0f, 0f);
+                Vector4 shift = new Vector4((float) (_currentMousePosition.X - _mousePosition.X) / ((float) Window.Width / 2),
+                                            (float) -(_currentMousePosition.Y - _mousePosition.Y) / ((float) Window.Height / 2), 0f, 0f);
                 
                 if (_mousePressedButton == 1)
                 {
@@ -183,10 +184,7 @@ namespace CG
             gl.DeleteShader(fragmentShader);
             
             #endregion
-
-            //интерполяция
-            int interpolationQuality = 10;
-
+            
             // создать объект вершинного массива
             uint[] arrays = new uint[2];
             gl.GenVertexArrays(2, arrays);
@@ -206,13 +204,13 @@ namespace CG
                 gl.UseProgram(shaderProgram);
                 gl.BindBuffer(OpenGL.GL_ARRAY_BUFFER, VBO);
                 gl.BindBuffer(OpenGL.GL_ELEMENT_ARRAY_BUFFER, VIO);
-                gl.VertexAttribPointer((uint)gl.GetAttribLocation(shaderProgram, "position"), 2, OpenGL.GL_FLOAT, false, 6 * sizeof(float), IntPtr.Zero);
+                gl.VertexAttribPointer((uint)gl.GetAttribLocation(shaderProgram, "position"), 2, OpenGL.GL_FLOAT, false, 2 * sizeof(float), IntPtr.Zero);
                 gl.EnableVertexAttribArray((uint)gl.GetAttribLocation(shaderProgram, "position"));
             gl.BindVertexArray(0);
             gl.BindVertexArray(pointVAO);
                 gl.UseProgram(shaderProgram);
                 gl.BindBuffer(OpenGL.GL_ARRAY_BUFFER, pointVBO);
-                gl.VertexAttribPointer((uint)gl.GetAttribLocation(shaderProgram, "position"), 2, OpenGL.GL_FLOAT, false, 6 * sizeof(float), IntPtr.Zero);
+                gl.VertexAttribPointer((uint)gl.GetAttribLocation(shaderProgram, "position"), 2, OpenGL.GL_FLOAT, false, 2 * sizeof(float), IntPtr.Zero);
                 gl.EnableVertexAttribArray((uint)gl.GetAttribLocation(shaderProgram, "position"));
             gl.BindVertexArray(0);
 
@@ -241,12 +239,14 @@ namespace CG
                 gl.ClearDepth(1.0f); // 0 - ближе, 1 - далеко 
                 gl.ClearStencil(0);
 
-                #region отрисовка с разными опциями
+                #region отрисовка
                 
                 if (_splineChanged)
                 {
                     _splineChanged = false;
 
+                    //интерполяция
+                    int interpolationQuality = 10;
                     List<float> points = new List<float>();
                     for (int i = 0; i < cardinalSpline.Points.Count; ++i)
                     {
@@ -254,9 +254,10 @@ namespace CG
                         points.Add(cardinalSpline.Points[i].Y);
                     }
                     List<float> interpolatedPoints = new List<float>();
+                    indexes.Clear();
                     for (int i = 1; i < cardinalSpline.Points.Count - 2; ++i)
                     {
-                        for (int j = 0; j < interpolationQuality; ++j)
+                        for (int j = 0; j <= interpolationQuality; ++j)
                         {
                             interpolatedPoints.Add(cardinalSpline.Points[i].X + ((float)j / interpolationQuality) * (cardinalSpline.Points[i + 1].X - cardinalSpline.Points[i].X));
                             interpolatedPoints.Add(cardinalSpline.Interpolate(i, (float) j / interpolationQuality));
@@ -264,11 +265,12 @@ namespace CG
                         }
                     }
                     
+                    
                     #region обновить буферы
 
                     gl.BindBuffer(OpenGL.GL_ARRAY_BUFFER, VBO);
                     gl.BufferData(OpenGL.GL_ARRAY_BUFFER, interpolatedPoints.ToArray(), OpenGL.GL_DYNAMIC_DRAW);
-                    gl.BindBuffer(OpenGL.GL_ARRAY_BUFFER, VIO);
+                    gl.BindBuffer(OpenGL.GL_ELEMENT_ARRAY_BUFFER, VIO);
                     gl.BufferData(OpenGL.GL_ELEMENT_ARRAY_BUFFER, indexes.ToArray(), OpenGL.GL_DYNAMIC_DRAW);
                     gl.BindBuffer(OpenGL.GL_ARRAY_BUFFER, pointVBO);
                     gl.BufferData(OpenGL.GL_ARRAY_BUFFER, points.ToArray(), OpenGL.GL_DYNAMIC_DRAW);
@@ -276,20 +278,22 @@ namespace CG
                     #endregion
                 }
                 
-                int transformationMatrixLocation = gl.GetUniformLocation(shaderProgram, "transformation");
-
-                gl.UniformMatrix4(transformationMatrixLocation, 1, false,  ToArray(_transformationMatrix));
+                // int transformationMatrixLocation = gl.GetUniformLocation(shaderProgram, "transformation");
+                // gl.UniformMatrix4(transformationMatrixLocation, 1, false,  ToArray(_transformationMatrix));
 
                 gl.PolygonMode(OpenGL.GL_FRONT_AND_BACK, OpenGL.GL_LINE);
+                int colorModeLocation = gl.GetUniformLocation(shaderProgram, "ColorMode");
                 gl.BindVertexArray(mainVAO);
-                    int colorModeLocation = gl.GetUniformLocation(shaderProgram, "ColorMode");
                     gl.Uniform1(colorModeLocation, 1);
-                    gl.DrawElements(OpenGL.GL_LINES, indexes.Count, OpenGL.GL_UNSIGNED_INT, IntPtr.Zero);
+                    gl.DrawElements(OpenGL.GL_LINE_STRIP, indexes.Count, OpenGL.GL_UNSIGNED_INT, IntPtr.Zero);
                 gl.BindVertexArray(0);
                 gl.BindVertexArray(pointVAO);
                     gl.Uniform1(colorModeLocation, 2);
                     gl.PointSize(5);
                     gl.DrawArrays(OpenGL.GL_POINTS, 0, cardinalSpline.Points.Count);
+                    gl.Uniform1(colorModeLocation, 0);
+                    gl.DrawArrays(OpenGL.GL_LINES, 0, 2);
+                    gl.DrawArrays(OpenGL.GL_LINES, cardinalSpline.Points.Count - 2, 2);
                 gl.BindVertexArray(0);
                 
                 #endregion
