@@ -9,9 +9,9 @@ namespace CGLab7
         public List<Vector4> Points;
         public float c = 0.5f;
 
-        public CardinalSpline(Vector4 a, Vector4 b, Vector4 c, Vector4 d)
+        public CardinalSpline(Vector4 a, Vector4 b, Vector4 c, Vector4 d, Vector4 e)
         {
-            Points = new List<Vector4>{a, b, c, d};
+            Points = new List<Vector4>{a, b, c, d, e};
         }
 
         public float Interpolate(int i, float t)

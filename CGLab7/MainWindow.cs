@@ -18,6 +18,8 @@ namespace CG
     class MainWindow : Window
     {
         [UI] private GLArea _glArea = null;
+        [UI] private Adjustment _splineC = null;
+        [UI] private Adjustment _interpolationQuality = null;
 
         #region Мышь
 
@@ -26,17 +28,18 @@ namespace CG
 
         #endregion
         
-        private Matrix4x4 _transformationMatrix = Matrix4x4.Identity;
+        // private Matrix4x4 _transformationMatrix = Matrix4x4.Identity;
         float minDist = 1000000000;
         int minInd = -1;
         private bool _splineChanged = true;
 
         #region выстраиваивание сцены
 
-        private CardinalSpline cardinalSpline = new CardinalSpline(new Vector4(0.2f, -0.5f, 0f, 1.0f), 
-                                                                    new Vector4(0.4f, 0.5f, 0f, 1.0f), 
-                                                                    new Vector4(0.6f, 0.5f, 0f, 1.0f),
-                                                                    new Vector4(0.8f, -0.5f, 0f, 1.0f));
+        private CardinalSpline cardinalSpline = new CardinalSpline(new Vector4(-0.5f, -0.5f, 0f, 1.0f), 
+                                                                    new Vector4(-0.25f, -0.5f, 0f, 1.0f), 
+                                                                    new Vector4(0.0f, 0.5f, 0f, 1.0f),
+                                                                    new Vector4(0.25f, -0.5f, 0f, 1.0f),
+                                                                    new Vector4(0.5f, -0.5f, 0f, 1.0f));
 
         #endregion
 
@@ -51,11 +54,20 @@ namespace CG
 
             _glArea.SizeAllocated += (o, args) =>
             {
-                // _transformationMatrix.M11
-                float aspectRatio = (float)args.Allocation.Width / (float)args.Allocation.Height;
-                _transformationMatrix *= Matrix4x4.CreateScale(new Vector3(aspectRatio, 1 / aspectRatio, 0f));
+                // float aspectRatio = (float)args.Allocation.Width / (float)args.Allocation.Height;
+                // _transformationMatrix *= Matrix4x4.CreateScale(new Vector3(aspectRatio, 1 / aspectRatio, 0f));
             };
 
+            _splineC.ValueChanged += (o, args) =>
+            {
+                _splineChanged = true;
+            };
+            
+            _interpolationQuality.ValueChanged += (o, args) =>
+            {
+                _splineChanged = true;
+            };
+            
             #region Обработка мыши
 
             _glArea.Events |= EventMask.ScrollMask | EventMask.PointerMotionMask | EventMask.ButtonPressMask |
@@ -67,7 +79,7 @@ namespace CG
                 _mousePosition.X = (float) args.Event.X;
                 _mousePosition.Y = (float) args.Event.Y;
                 
-                Vector4 position = new Vector4((float) (args.Event.X - (float) Window.Width / 2) / ((float) Window.Width / 2), 
+                Vector4 position = new Vector4((float) (args.Event.X - (float) _glArea.AllocatedWidth / 2) / ((float) _glArea.AllocatedWidth / 2), 
                     (float) -(args.Event.Y - (float) Window.Height / 2) / ((float) Window.Height / 2), 0f, 1.0f);
 
                 minDist = 1000000000;
@@ -101,27 +113,27 @@ namespace CG
                         _splineChanged = true;
                     }
                 }
-                if (_mousePressedButton == 3)
-                {
-                    _transformationMatrix *= Matrix4x4.CreateTranslation(shift.X, shift.Y, 0f);
-                }
+                // if (_mousePressedButton == 3)
+                // {
+                //     _transformationMatrix *= Matrix4x4.CreateTranslation(shift.X, shift.Y, 0f);
+                // }
 
                 _mousePosition = _currentMousePosition;
             };
 
             _glArea.ButtonReleaseEvent += (o, args) => _mousePressedButton = 0;
 
-            _glArea.ScrollEvent += (o, args) =>
-            {
-                if (args.Event.Direction == ScrollDirection.Up)
-                {
-                    _transformationMatrix *= Matrix4x4.CreateScale(1.25f, 1.25f, 0f);
-                }
-                else if (args.Event.Direction == ScrollDirection.Down)
-                {
-                    _transformationMatrix *= Matrix4x4.CreateScale(0.8f, 0.8f, 0f);
-                }
-            };
+            // _glArea.ScrollEvent += (o, args) =>
+            // {
+            //     if (args.Event.Direction == ScrollDirection.Up)
+            //     {
+            //         _transformationMatrix *= Matrix4x4.CreateScale(1.25f, 1.25f, 0f);
+            //     }
+            //     else if (args.Event.Direction == ScrollDirection.Down)
+            //     {
+            //         _transformationMatrix *= Matrix4x4.CreateScale(0.8f, 0.8f, 0f);
+            //     }
+            // };
 
             #endregion
         }
@@ -227,7 +239,7 @@ namespace CG
             gl.Enable(OpenGL.GL_CULL_FACE);
             gl.CullFace(OpenGL.GL_BACK);
 
-            gl.ClearColor(0.2f, 0.2f, 0.2f, 1);
+            gl.ClearColor(1.0f, 1.0f, 1.0f, 1);
 
             #endregion
 
@@ -244,9 +256,10 @@ namespace CG
                 if (_splineChanged)
                 {
                     _splineChanged = false;
-
+                    
+                    cardinalSpline.c = (float) _splineC.Value;
                     //интерполяция
-                    int interpolationQuality = 10;
+                    int interpolationQuality = (int) _interpolationQuality.Value;
                     List<float> points = new List<float>();
                     for (int i = 0; i < cardinalSpline.Points.Count; ++i)
                     {
@@ -285,11 +298,12 @@ namespace CG
                 int colorModeLocation = gl.GetUniformLocation(shaderProgram, "ColorMode");
                 gl.BindVertexArray(mainVAO);
                     gl.Uniform1(colorModeLocation, 1);
+                    gl.LineWidth(3);
                     gl.DrawElements(OpenGL.GL_LINE_STRIP, indexes.Count, OpenGL.GL_UNSIGNED_INT, IntPtr.Zero);
                 gl.BindVertexArray(0);
                 gl.BindVertexArray(pointVAO);
                     gl.Uniform1(colorModeLocation, 2);
-                    gl.PointSize(5);
+                    gl.PointSize(7);
                     gl.DrawArrays(OpenGL.GL_POINTS, 0, cardinalSpline.Points.Count);
                     gl.Uniform1(colorModeLocation, 0);
                     gl.DrawArrays(OpenGL.GL_LINES, 0, 2);
@@ -306,18 +320,18 @@ namespace CG
             };
         }
         
-        public static float[] ToArray(Matrix4x4 m)
-        {
-            return new float[]
-            {
-                m.M11, m.M21, m.M31, m.M41,
-                m.M12, m.M22, m.M32, m.M42,
-                m.M13, m.M23, m.M33, m.M43,
-                m.M14, m.M24, m.M34, m.M44
-            };
-        }
+        // public static float[] ToArray(Matrix4x4 m)
+        // {
+        //     return new float[]
+        //     {
+        //         m.M11, m.M21, m.M31, m.M41,
+        //         m.M12, m.M22, m.M32, m.M42,
+        //         m.M13, m.M23, m.M33, m.M43,
+        //         m.M14, m.M24, m.M34, m.M44
+        //     };
+        // }
         
-        // считать исходин шейдера по названию файла
+        // считать исходик шейдера по названию файла
         public static string ReadFromRes(string name) {
             // Format: "{Namespace}.{Folder}.{filename}.{Extension}"
             var assembly = Assembly.GetExecutingAssembly();
