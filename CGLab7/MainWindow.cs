@@ -86,7 +86,7 @@ namespace CG
                 minInd = -1;
                 for (int i = 0; i < cardinalSpline.Points.Count; ++i)
                 {
-                    if (Math.Abs((position - cardinalSpline.Points[i]).Length()) < minDist)
+                    if ((position - cardinalSpline.Points[i]).Length() < minDist)
                     {
                         minDist = Math.Abs((position - cardinalSpline.Points[i]).Length());
                         minInd = i;
