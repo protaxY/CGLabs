@@ -77,6 +77,7 @@ namespace CG
         [UI] private Adjustment _activeVertexPositionX = null;
         [UI] private Adjustment _activeVertexPositionY = null;
         [UI] private Adjustment _activeVertexPositionZ = null;
+        [UI] private Adjustment _activeRotation = null;
 
         #endregion
         
@@ -274,12 +275,21 @@ namespace CG
                     _figureChanged = true;
                 }
             };
+            _activeRotation.ValueChanged += (o, args) =>
+            {
+                if (minInd != -1)
+                {
+                    _kinematicSurface.GuideCurve.Rotations[minInd] = (float) _activeRotation.Value * (float) Math.PI / (float) 180;
+                    _figureChanged = true;
+                }
+            };
             
             _addBack.Clicked += (o, args) =>
             {
                 Vector4 direction = _kinematicSurface.GuideCurve.Points[0] - _kinematicSurface.GuideCurve.Points[1];
                 Vector4 newPoint = _kinematicSurface.GuideCurve.Points[0] + direction;
                 _kinematicSurface.GuideCurve.Points.Insert(0, newPoint);
+                _kinematicSurface.GuideCurve.Rotations.Insert(0, 0);
                 minInd = -1;
                 _figureChanged = true;
             };
@@ -288,6 +298,7 @@ namespace CG
                 if (_kinematicSurface.GuideCurve.Points.Count > 4)
                 {
                     _kinematicSurface.GuideCurve.Points.RemoveAt(0);
+                    _kinematicSurface.GuideCurve.Rotations.RemoveAt(0);
                 }
                 minInd = -1;
                 _figureChanged = true;
@@ -298,6 +309,7 @@ namespace CG
                                     - _kinematicSurface.GuideCurve.Points[_kinematicSurface.GuideCurve.Points.Count - 2];
                 Vector4 newPoint = _kinematicSurface.GuideCurve.Points[_kinematicSurface.GuideCurve.Points.Count - 1] + direction;
                 _kinematicSurface.GuideCurve.Points.Add(newPoint);
+                _kinematicSurface.GuideCurve.Rotations.Add(0);
                 minInd = -1;
                 _figureChanged = true;
             };
@@ -306,6 +318,7 @@ namespace CG
                 if (_kinematicSurface.GuideCurve.Points.Count > 4)
                 {
                     _kinematicSurface.GuideCurve.Points.RemoveAt(_kinematicSurface.GuideCurve.Points.Count - 1);
+                    _kinematicSurface.GuideCurve.Rotations.RemoveAt(_kinematicSurface.GuideCurve.Points.Count - 1);
                 }
                 minInd = -1;
                 _figureChanged = true;
@@ -414,12 +427,13 @@ namespace CG
                     minInd = -1;
                 }
 
-                // if (minInd != -1)
-                // {
-                //     _activeVertexPositionX.Value = _kinematicSurface.GuideCurve.Points[minInd].X;
-                //     _activeVertexPositionY.Value = _kinematicSurface.GuideCurve.Points[minInd].Y;
-                //     _activeVertexPositionZ.Value = _kinematicSurface.GuideCurve.Points[minInd].Z;
-                // }
+                if (minInd != -1)
+                {
+                    _activeVertexPositionX.Value = _kinematicSurface.GuideCurve.Points[minInd].X;
+                    _activeVertexPositionY.Value = _kinematicSurface.GuideCurve.Points[minInd].Y;
+                    _activeVertexPositionZ.Value = _kinematicSurface.GuideCurve.Points[minInd].Z;
+                    _activeRotation.Value = _kinematicSurface.GuideCurve.Rotations[minInd] * 180 / Math.PI;
+                }
             };
 
             _glArea.MotionNotifyEvent += (o, args) =>

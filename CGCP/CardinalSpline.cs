@@ -8,11 +8,13 @@ namespace CGCP
     public class CardinalSpline
     {
         public List<Vector4> Points;
+        public List<float> Rotations;
         public float c = 0.5f;
 
         public CardinalSpline(Vector4 a, Vector4 b, Vector4 c, Vector4 d, Vector4 e)
         {
             Points = new List<Vector4>{a, b, c, d, e};
+            Rotations = new List<float>() {0f, 0f, 0f, 0f, 0f};
         }
 
         public List<Vector4> Interpolate(int quality)
@@ -27,6 +29,21 @@ namespace CGCP
                 }
             }
             result.Add(Interpolate(Points.Count - 3, 1));
+            return result;
+        }
+
+        public List<float> InterpolateRotations(int quality)
+        {
+            List<float> result = new List<float>();
+            
+            for (int i = 1; i < Points.Count - 2; ++i)
+            {
+                for (int j = 0; j < quality; ++j)
+                {
+                    result.Add(Rotations[i] + ((float)j / (float)quality) * (Rotations[i + 1] - Rotations[i]));
+                }
+            }
+            result.Add(Rotations[Rotations.Count - 2]);
             return result;
         }
 

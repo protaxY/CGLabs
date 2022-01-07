@@ -26,14 +26,15 @@ namespace CGCP
             #region генерация точек
 
             List<Vector4> bicornInterpolation = GeneratingCurve.Interpolate(GeneratingCurveQuality);
-            Matrix4x4 trans = Matrix4x4.CreateRotationZ((float)(Math.PI / 2));
-            trans *= Matrix4x4.CreateRotationY((float)(Math.PI / 2));
+            Matrix4x4 bicornTransformation = Matrix4x4.CreateRotationZ((float)(Math.PI / 2));
+            bicornTransformation *= Matrix4x4.CreateRotationY((float)(Math.PI / 2));
             for (int i = 0; i < bicornInterpolation.Count; ++i)
             {
-                bicornInterpolation[i] = Vector4.Transform(bicornInterpolation[i], trans);
+                bicornInterpolation[i] = Vector4.Transform(bicornInterpolation[i], bicornTransformation);
             }
 
             List<Vector4> splineInterpolation = GuideCurve.Interpolate(GuideCurveQuality);
+            List<float> splineRotationInterpolation = GuideCurve.InterpolateRotations(GuideCurveQuality);
 
             for (int i = 0; i < splineInterpolation.Count; ++i)
             {
@@ -45,11 +46,10 @@ namespace CGCP
                 direction /= direction.Length();
 
                 float phi = (float) Math.Atan2(direction.Y, direction.X);
-                // if (direction.Y < 0)
-                //     phi += (float) Math.PI;
                 float theta = (float) Math.Acos(direction.Z);
                 
-                Matrix4x4 transformation = Matrix4x4.CreateRotationZ(phi);
+                Matrix4x4 transformation = Matrix4x4.CreateRotationX(splineRotationInterpolation[i]);
+                transformation *= Matrix4x4.CreateRotationZ(phi);
                 transformation *= Matrix4x4.CreateRotationY(theta - (float) (Math.PI / 2));
                 transformation *= Matrix4x4.CreateTranslation(new Vector3(splineInterpolation[i].X,
                                                                             splineInterpolation[i].Y, 
