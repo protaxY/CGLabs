@@ -34,6 +34,7 @@ namespace CG
         [UI] private Adjustment _clipEnd = null;
         //параметры элипсойда
         [UI] private Adjustment _a = null;
+        [UI] private Adjustment _c = null;
 
         [UI] private Adjustment _generatingCurveQuality = null;
         [UI] private Adjustment _guideCurveQuality = null;
@@ -238,6 +239,7 @@ namespace CG
             };
 
             _a.ValueChanged += (o, args) => {_kinematicSurface.GeneratingCurve.a = (float) _a.Value;_figureChanged = true;};
+            _c.ValueChanged += (o, args) => {_kinematicSurface.GuideCurve.c = (float) _c.Value;_figureChanged = true;};
             _guideCurveQuality.ValueChanged += (o, args) => {_kinematicSurface.GuideCurveQuality = (int) _guideCurveQuality.Value; _figureChanged = true;};
             _generatingCurveQuality.ValueChanged += (o, args) => {_kinematicSurface.GeneratingCurveQuality = (int) _generatingCurveQuality.Value; _figureChanged = true;};
             
@@ -409,30 +411,33 @@ namespace CG
                 Vector4 position = new Vector4((float) (args.Event.X - (float) _glArea.AllocatedWidth / 2) / ((float) _glArea.AllocatedWidth / 2), 
                     (float) -(args.Event.Y - (float) Window.Height / 2) / ((float) Window.Height / 2), 0f, 1);
 
-                minDist = 1000000000;
-                minInd = -1;
-                for (int i = 0; i < _kinematicSurface.GuideCurve.Points.Count; ++i)
+                if (_mousePressedButton == 2)
                 {
-                    Vector4 pointScreenPosition = Vector4.Transform(_kinematicSurface.GuideCurve.Points[i], Matrix4x4.Transpose(_cameraTransformationMatrix));
-                    pointScreenPosition /= pointScreenPosition.W;
-                    pointScreenPosition.Z = 0;
-                    if ((position - pointScreenPosition).Length() < minDist)
-                    {
-                        minDist = (position - pointScreenPosition).Length();
-                        minInd = i;
-                    }
-                }
-                if (minDist > 0.1)
-                {
+                    minDist = 1000000000;
                     minInd = -1;
-                }
+                    for (int i = 0; i < _kinematicSurface.GuideCurve.Points.Count; ++i)
+                    {
+                        Vector4 pointScreenPosition = Vector4.Transform(_kinematicSurface.GuideCurve.Points[i], Matrix4x4.Transpose(_cameraTransformationMatrix));
+                        pointScreenPosition /= pointScreenPosition.W;
+                        pointScreenPosition.Z = 0;
+                        if ((position - pointScreenPosition).Length() < minDist)
+                        {
+                            minDist = (position - pointScreenPosition).Length();
+                            minInd = i;
+                        }
+                    }
+                    if (minDist > 0.1)
+                    {
+                        minInd = -1;
+                    }
 
-                if (minInd != -1)
-                {
-                    _activeVertexPositionX.Value = _kinematicSurface.GuideCurve.Points[minInd].X;
-                    _activeVertexPositionY.Value = _kinematicSurface.GuideCurve.Points[minInd].Y;
-                    _activeVertexPositionZ.Value = _kinematicSurface.GuideCurve.Points[minInd].Z;
-                    _activeRotation.Value = _kinematicSurface.GuideCurve.Rotations[minInd] * 180 / Math.PI;
+                    if (minInd != -1)
+                    {
+                        _activeVertexPositionX.Value = _kinematicSurface.GuideCurve.Points[minInd].X;
+                        _activeVertexPositionY.Value = _kinematicSurface.GuideCurve.Points[minInd].Y;
+                        _activeVertexPositionZ.Value = _kinematicSurface.GuideCurve.Points[minInd].Z;
+                        _activeRotation.Value = _kinematicSurface.GuideCurve.Rotations[minInd] * 180 / Math.PI;
+                    }
                 }
             };
 
@@ -481,13 +486,13 @@ namespace CG
                     Matrix4x4 mouseRotation = Matrix4x4.CreateRotationX((_currentMousePosition.Y - _mousePosition.Y) * _mouseRotationSensitivity);
                     mouseRotation *= Matrix4x4.CreateRotationY((_currentMousePosition.X - _mousePosition.X) * _mouseRotationSensitivity);
 
-                    Matrix4x4 currnetRotation = mouseRotation * 
+                    Matrix4x4 currentRotation = mouseRotation * 
                                                 Matrix4x4.CreateRotationX((float) (_xRotation.Value * Math.PI / 180)) *
                                                 Matrix4x4.CreateRotationY((float) (_yRotation.Value * Math.PI / 180)) *
                                                 Matrix4x4.CreateRotationZ((float) (_zRotation.Value * Math.PI / 180));
 
                     //для углов Эйлера
-                    MatrixToAngles(currnetRotation, out var x, out var y, out var z);
+                    MatrixToAngles(currentRotation, out var x, out var y, out var z);
                     _xRotation.Value = x;
                     _yRotation.Value = y;
                     _zRotation.Value = z;
