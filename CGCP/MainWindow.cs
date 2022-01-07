@@ -34,21 +34,16 @@ namespace CG
         [UI] private Adjustment _clipEnd = null;
         //параметры элипсойда
         [UI] private Adjustment _a = null;
-        [UI] private Adjustment _b = null;
-        [UI] private Adjustment _c = null;
 
-        [UI] private Adjustment _meridiansCount = null;
-        [UI] private Adjustment _parallelsCount = null;
+        [UI] private Adjustment _generatingCurveQuality = null;
+        [UI] private Adjustment _guideCurveQuality = null;
         // опции
         [UI] private CheckButton _allowZBuffer = null;
         [UI] private CheckButton _allowNormals = null;
         [UI] private CheckButton _allowWireframe = null;
         [UI] private CheckButton _allowInvisPoly = null;
         //материал
-        [UI] private Adjustment _materialColorR = null;
-        [UI] private Adjustment _materialColorG = null;
-        [UI] private Adjustment _materialColorB = null;
-        
+
         [UI] private Adjustment _k_aR = null;
         [UI] private Adjustment _k_aG = null;
         [UI] private Adjustment _k_aB = null;
@@ -74,8 +69,22 @@ namespace CG
         [UI] private Adjustment _pointLightPositionZ = null;
         
         [UI] private Adjustment _attenuationСoefficient = null;
+        
         #endregion
 
+        #region параметры активной точки
+
+        [UI] private Adjustment _activeVertexPositionX = null;
+        [UI] private Adjustment _activeVertexPositionY = null;
+        [UI] private Adjustment _activeVertexPositionZ = null;
+
+        #endregion
+        
+        [UI] private Button _addBack = null;
+        [UI] private Button _delBack = null;
+        [UI] private Button _addFront = null;
+        [UI] private Button _delFront = null;
+        
         #region UI матрицы
 
         [UI] private Adjustment _m11 = null;
@@ -119,7 +128,8 @@ namespace CG
             Green,
             Cyan,
             LightPaint,
-            None
+            None,
+            Orange
         }
 
         #region выстраиваивание сцены
@@ -226,19 +236,80 @@ namespace CG
                 updateTranformationMatrixAdjustments();
             };
 
-            _a.ValueChanged += (o, args) => {_figureChanged = true;};
-            _b.ValueChanged += (o, args) => {_figureChanged = true;};
-            _c.ValueChanged += (o, args) => {_figureChanged = true;};
-            _meridiansCount.ValueChanged += (o, args) => {_figureChanged = true;};
-            _parallelsCount.ValueChanged += (o, args) => {_figureChanged = true;};
+            _a.ValueChanged += (o, args) => {_kinematicSurface.GeneratingCurve.a = (float) _a.Value;_figureChanged = true;};
+            _guideCurveQuality.ValueChanged += (o, args) => {_kinematicSurface.GuideCurveQuality = (int) _guideCurveQuality.Value; _figureChanged = true;};
+            _generatingCurveQuality.ValueChanged += (o, args) => {_kinematicSurface.GeneratingCurveQuality = (int) _generatingCurveQuality.Value; _figureChanged = true;};
             
             _pointLightPositionX.ValueChanged += (o, args) => {_pointLightChanged = true;};
             _pointLightPositionY.ValueChanged += (o, args) => {_pointLightChanged = true;};
             _pointLightPositionZ.ValueChanged += (o, args) => {_pointLightChanged = true;};
-
-            _materialColorR.ValueChanged += (o, args) => {_figureChanged = true;};
-            _materialColorG.ValueChanged += (o, args) => {_figureChanged = true;};
-            _materialColorB.ValueChanged += (o, args) => {_figureChanged = true;};
+            
+            _activeVertexPositionX.ValueChanged += (o, args) =>
+            {
+                if (minInd != -1)
+                {
+                    _kinematicSurface.GuideCurve.Points[minInd] = new Vector4((float)_activeVertexPositionX.Value,
+                        _kinematicSurface.GuideCurve.Points[minInd].Y,
+                        _kinematicSurface.GuideCurve.Points[minInd].Z, 1);
+                    _figureChanged = true;
+                }
+            };
+            _activeVertexPositionY.ValueChanged += (o, args) =>
+            {
+                if (minInd != -1)
+                {
+                    _kinematicSurface.GuideCurve.Points[minInd] = new Vector4(_kinematicSurface.GuideCurve.Points[minInd].X,
+                        (float)_activeVertexPositionY.Value,
+                        _kinematicSurface.GuideCurve.Points[minInd].Z, 1);
+                    _figureChanged = true;
+                }
+            };
+            _activeVertexPositionZ.ValueChanged += (o, args) =>
+            {
+                if (minInd != -1)
+                {
+                    _kinematicSurface.GuideCurve.Points[minInd] = new Vector4(_kinematicSurface.GuideCurve.Points[minInd].X,
+                        _kinematicSurface.GuideCurve.Points[minInd].Y,
+                        (float)_activeVertexPositionZ.Value, 1);
+                    _figureChanged = true;
+                }
+            };
+            
+            _addBack.Clicked += (o, args) =>
+            {
+                Vector4 direction = _kinematicSurface.GuideCurve.Points[0] - _kinematicSurface.GuideCurve.Points[1];
+                Vector4 newPoint = _kinematicSurface.GuideCurve.Points[0] + direction;
+                _kinematicSurface.GuideCurve.Points.Insert(0, newPoint);
+                minInd = -1;
+                _figureChanged = true;
+            };
+            _delBack.Clicked += (o, args) =>
+            {
+                if (_kinematicSurface.GuideCurve.Points.Count > 4)
+                {
+                    _kinematicSurface.GuideCurve.Points.RemoveAt(0);
+                }
+                minInd = -1;
+                _figureChanged = true;
+            };
+            _addFront.Clicked += (o, args) =>
+            {
+                Vector4 direction = _kinematicSurface.GuideCurve.Points[_kinematicSurface.GuideCurve.Points.Count - 1] 
+                                    - _kinematicSurface.GuideCurve.Points[_kinematicSurface.GuideCurve.Points.Count - 2];
+                Vector4 newPoint = _kinematicSurface.GuideCurve.Points[_kinematicSurface.GuideCurve.Points.Count - 1] + direction;
+                _kinematicSurface.GuideCurve.Points.Add(newPoint);
+                minInd = -1;
+                _figureChanged = true;
+            };
+            _delFront.Clicked += (o, args) =>
+            {
+                if (_kinematicSurface.GuideCurve.Points.Count > 4)
+                {
+                    _kinematicSurface.GuideCurve.Points.RemoveAt(_kinematicSurface.GuideCurve.Points.Count - 1);
+                }
+                minInd = -1;
+                _figureChanged = true;
+            };
             
             #endregion
 
@@ -342,6 +413,13 @@ namespace CG
                 {
                     minInd = -1;
                 }
+
+                // if (minInd != -1)
+                // {
+                //     _activeVertexPositionX.Value = _kinematicSurface.GuideCurve.Points[minInd].X;
+                //     _activeVertexPositionY.Value = _kinematicSurface.GuideCurve.Points[minInd].Y;
+                //     _activeVertexPositionZ.Value = _kinematicSurface.GuideCurve.Points[minInd].Z;
+                // }
             };
 
             _glArea.MotionNotifyEvent += (o, args) =>
@@ -375,6 +453,11 @@ namespace CG
                         _kinematicSurface.GuideCurve.Points[minInd] = Vector4.Transform(screenPosition, inverseTransformation);
                         
                         _kinematicSurface.GuideCurve.Points[minInd] /= _kinematicSurface.GuideCurve.Points[minInd].W;
+
+                        _activeVertexPositionX.Value = _kinematicSurface.GuideCurve.Points[minInd].X;
+                        _activeVertexPositionY.Value = _kinematicSurface.GuideCurve.Points[minInd].Y;
+                        _activeVertexPositionZ.Value = _kinematicSurface.GuideCurve.Points[minInd].Z;
+                        
                         _figureChanged = true;
                     }
                 }
@@ -609,68 +692,20 @@ namespace CG
 
                     #region обновить буферы поверхности
 
-                    interpolation.Clear(); // отчистить список, перед тем как записать новые данные
-                    //перевожу координаты верши в массив float
-                    // List<Vector4> interpolation = kinematicSurface.Interpolate(10, 10, out indexes);
-
-                    // interpolation =  _kinematicSurface.GuideCurve.Interpolate(10);
+                    _kinematicSurface.Update();
                     
-                    List<Vector4> bicornInterpolation = _kinematicSurface.GeneratingCurve.Interpolate(20);
-                    Matrix4x4 trans = Matrix4x4.CreateRotationZ((float)(Math.PI / 2));
-                    trans *= Matrix4x4.CreateRotationY((float)(Math.PI / 2));
-                    for (int i = 0; i < bicornInterpolation.Count; ++i)
-                    {
-                        bicornInterpolation[i] = Vector4.Transform(bicornInterpolation[i], trans);
-                    }
-
-                    List<Vector4> splineInterpolation = _kinematicSurface.GuideCurve.Interpolate(10);
-
-                    for (int i = 0; i < splineInterpolation.Count; ++i)
-                    {
-                        Vector4 direction = new Vector4();
-                        if (i == splineInterpolation.Count - 1)
-                        {
-                            direction = splineInterpolation[i] - splineInterpolation[i - 1];
-                        } else direction = splineInterpolation[i + 1] - splineInterpolation[i];
-                        direction /= direction.Length();
-
-                        float phi = (float) Math.Atan2(direction.Y, direction.X);
-                        if (direction.Y < 0)
-                            phi += (float) Math.PI;
-                        float theta = (float) Math.Acos(direction.Z);
-                        
-                        Matrix4x4 transformation = Matrix4x4.CreateRotationZ(phi);
-                        transformation *= Matrix4x4.CreateRotationY(theta - (float) (Math.PI / 2));
-                        transformation *= Matrix4x4.CreateTranslation(new Vector3(splineInterpolation[i].X,
-                                                                                    splineInterpolation[i].Y, 
-                                                                                    splineInterpolation[i].Z));
-
-                        List<Vector4> transformedBicornInterpolation = new List<Vector4>();
-                        for (int j = 0; j < bicornInterpolation.Count; ++j)
-                        {
-                            transformedBicornInterpolation.Add(Vector4.Transform(bicornInterpolation[j], transformation));
-                        }
-                        
-                        interpolation.AddRange(transformedBicornInterpolation);
-                    }
-                    
-                    
-                    // interpolation.RemoveAt(interpolation.Count-1);
                     vertices = new List<float>();
-                    for (int i = 0; i < interpolation.Count; ++i)
+                    for (int i = 0; i < _kinematicSurface.Vertices.Count; ++i)
                     {
-                        vertices.Add(interpolation[i].X);
-                        vertices.Add(interpolation[i].Y);
-                        vertices.Add(interpolation[i].Z);
+                        vertices.Add(_kinematicSurface.Vertices[i].Position.X);
+                        vertices.Add(_kinematicSurface.Vertices[i].Position.Y);
+                        vertices.Add(_kinematicSurface.Vertices[i].Position.Z);
 
-                        // Vector4 normal = kinematicSurface.Vertices[i].CalculateNormal();
-                        // vertices.Add(normal.X);
-                        // vertices.Add(normal.Y);
-                        // vertices.Add(normal.Z);
-                        vertices.Add(1);
-                        vertices.Add(1);
-                        vertices.Add(1);
-                        
+                        Vector4 normal = _kinematicSurface.Vertices[i].CalculateNormal();
+                        vertices.Add(normal.X);
+                        vertices.Add(normal.Y);
+                        vertices.Add(normal.Z);
+
                         vertices.Add(1);
                         vertices.Add(1);
                         vertices.Add(1);
@@ -680,38 +715,39 @@ namespace CG
                     // данные о вершинах 
                     gl.BufferData(OpenGL.GL_ARRAY_BUFFER, vertices.ToArray(), OpenGL.GL_DYNAMIC_DRAW);
                     // массив индексов
+                    indexes = _kinematicSurface.GetEnumerationOfVertexes();
                     gl.BufferData(OpenGL.GL_ELEMENT_ARRAY_BUFFER, indexes.ToArray(), OpenGL.GL_DYNAMIC_DRAW);
                     
-                    // List<float> normalVertices = new List<float>();
-                    // normalIndexes = new List<uint>();
-                    // uint cnt = 0;
-                    // for (int i = 0; i < kinematicSurface.Polygons.Count; ++i)
-                    // {
-                    //     Vector4 center = kinematicSurface.Polygons[i].CalculateCenter();
-                    //     Vector4 normal = kinematicSurface.Polygons[i].CalculateNormal();
-                    //     
-                    //     normalVertices.Add(center.X);
-                    //     normalVertices.Add(center.Y);
-                    //     normalVertices.Add(center.Z);
-                    //
-                    //     normalIndexes.Add(cnt);
-                    //     ++cnt;
-                    //
-                    //     normalVertices.Add(center.X + 0.2f * normal.X);
-                    //     normalVertices.Add(center.Y + 0.2f * normal.Y);
-                    //     normalVertices.Add(center.Z + 0.2f * normal.Z);
-                    //
-                    //     normalIndexes.Add(cnt);
-                    //     ++cnt;
-                    // }
+                    List<float> normalVertices = new List<float>();
+                    normalIndexes = new List<uint>();
+                    uint cnt = 0;
+                    for (int i = 0; i < _kinematicSurface.Polygons.Count; ++i)
+                    {
+                        Vector4 center = _kinematicSurface.Polygons[i].CalculateCenter();
+                        Vector4 normal = _kinematicSurface.Polygons[i].CalculateNormal();
+                        
+                        normalVertices.Add(center.X);
+                        normalVertices.Add(center.Y);
+                        normalVertices.Add(center.Z);
+                    
+                        normalIndexes.Add(cnt);
+                        ++cnt;
+                    
+                        normalVertices.Add(center.X + 0.2f * normal.X);
+                        normalVertices.Add(center.Y + 0.2f * normal.Y);
+                        normalVertices.Add(center.Z + 0.2f * normal.Z);
+                    
+                        normalIndexes.Add(cnt);
+                        ++cnt;
+                    }
                 
-                    // gl.BindBuffer(OpenGL.GL_ARRAY_BUFFER, normalsVBO);
-                    // gl.BindBuffer(OpenGL.GL_ELEMENT_ARRAY_BUFFER, normalsVIO);
-                    //
-                    // gl.BufferData(OpenGL.GL_ARRAY_BUFFER, normalVertices.ToArray(), OpenGL.GL_DYNAMIC_DRAW);
-                    // gl.BufferData(OpenGL.GL_ELEMENT_ARRAY_BUFFER, normalIndexes.ToArray(), OpenGL.GL_DYNAMIC_DRAW);
-                    // gl.VertexAttribPointer((uint)gl.GetAttribLocation(polygonNormalsShaderProgram, "position"), 3, OpenGL.GL_FLOAT, false, 3 * sizeof(float), IntPtr.Zero);
-                    // gl.EnableVertexAttribArray((uint)gl.GetAttribLocation(polygonNormalsShaderProgram, "position"));
+                    gl.BindBuffer(OpenGL.GL_ARRAY_BUFFER, normalsVBO);
+                    gl.BindBuffer(OpenGL.GL_ELEMENT_ARRAY_BUFFER, normalsVIO);
+                    
+                    gl.BufferData(OpenGL.GL_ARRAY_BUFFER, normalVertices.ToArray(), OpenGL.GL_DYNAMIC_DRAW);
+                    gl.BufferData(OpenGL.GL_ELEMENT_ARRAY_BUFFER, normalIndexes.ToArray(), OpenGL.GL_DYNAMIC_DRAW);
+                    gl.VertexAttribPointer((uint)gl.GetAttribLocation(polygonNormalsShaderProgram, "position"), 3, OpenGL.GL_FLOAT, false, 3 * sizeof(float), IntPtr.Zero);
+                    gl.EnableVertexAttribArray((uint)gl.GetAttribLocation(polygonNormalsShaderProgram, "position"));
 
                     #endregion
                 }
@@ -766,8 +802,8 @@ namespace CG
                         
                         gl.Uniform1(gl.GetUniformLocation(shaderProgram, "colorMode"), 1, new int[] {(int)FragmetShaderColorMode.Green});
                         gl.PolygonMode(OpenGL.GL_FRONT_AND_BACK, OpenGL.GL_LINE);
-                        // gl.DrawElements(OpenGL.GL_TRIANGLES, indexes.Count, OpenGL.GL_UNSIGNED_INT, IntPtr.Zero);
-                        gl.DrawArrays(OpenGL.GL_POINTS, 0, vertices.Count);
+                        gl.DrawElements(OpenGL.GL_TRIANGLES, indexes.Count, OpenGL.GL_UNSIGNED_INT, IntPtr.Zero);
+                        // gl.DrawArrays(OpenGL.GL_POINTS, 0, vertices.Count);
                     }
                     else if (_allowWireframe.Active && _allowInvisPoly.Active)
                     {
@@ -775,8 +811,8 @@ namespace CG
                         
                         gl.Uniform1(gl.GetUniformLocation(shaderProgram, "colorMode"), 1, new int[] {(int)FragmetShaderColorMode.Green});
                         gl.PolygonMode(OpenGL.GL_FRONT_AND_BACK, OpenGL.GL_LINE);
-                        // gl.DrawElements(OpenGL.GL_TRIANGLES, indexes.Count, OpenGL.GL_UNSIGNED_INT, IntPtr.Zero);
-                        gl.DrawArrays(OpenGL.GL_POINTS, 0, vertices.Count);
+                        gl.DrawElements(OpenGL.GL_TRIANGLES, indexes.Count, OpenGL.GL_UNSIGNED_INT, IntPtr.Zero);
+                        // gl.DrawArrays(OpenGL.GL_POINTS, 0, vertices.Count);
                     }
                     else if (!_allowWireframe.Active && !_allowInvisPoly.Active)
                     {
@@ -784,8 +820,8 @@ namespace CG
                     
                         gl.Uniform1(gl.GetUniformLocation(shaderProgram, "colorMode"), 1, new int[] {(int)FragmetShaderColorMode.None});
                         gl.PolygonMode(OpenGL.GL_FRONT_AND_BACK, OpenGL.GL_FILL);
-                        // gl.DrawElements(OpenGL.GL_TRIANGLES, indexes.Count, OpenGL.GL_UNSIGNED_INT, IntPtr.Zero);
-                        gl.DrawArrays(OpenGL.GL_POINTS, 0, vertices.Count);
+                        gl.DrawElements(OpenGL.GL_TRIANGLES, indexes.Count, OpenGL.GL_UNSIGNED_INT, IntPtr.Zero);
+                        // gl.DrawArrays(OpenGL.GL_POINTS, 0, vertices.Count);
                     }
                     else if (!_allowWireframe.Active && _allowInvisPoly.Active)
                     {
@@ -793,8 +829,8 @@ namespace CG
                         
                         gl.Uniform1(gl.GetUniformLocation(shaderProgram, "colorMode"), 1, new int[] {(int)FragmetShaderColorMode.None});
                         gl.PolygonMode(OpenGL.GL_FRONT_AND_BACK, OpenGL.GL_FILL);
-                        // gl.DrawElements(OpenGL.GL_TRIANGLES, indexes.Count, OpenGL.GL_UNSIGNED_INT, IntPtr.Zero);
-                        gl.DrawArrays(OpenGL.GL_POINTS, 0, interpolation.Count);
+                        gl.DrawElements(OpenGL.GL_TRIANGLES, indexes.Count, OpenGL.GL_UNSIGNED_INT, IntPtr.Zero);
+                        // gl.DrawArrays(OpenGL.GL_POINTS, 0, interpolation.Count);
                     }
                 gl.BindVertexArray(0);
                 
@@ -808,24 +844,30 @@ namespace CG
                     gl.BindVertexArray(0);
                 }
 
-                // if (_allowNormals.Active)
-                // {
-                //     gl.UseProgram(polygonNormalsShaderProgram);
-                //     gl.BindVertexArray(normalsVAO); 
-                //         transformationMatrixLocation = gl.GetUniformLocation(polygonNormalsShaderProgram, "transformation");
-                //         gl.UniformMatrix4(transformationMatrixLocation, 1, false,  ToArray(_cameraTransformationMatrix));
-                //         gl.Uniform1(gl.GetUniformLocation(polygonNormalsShaderProgram, "colorMode"), 1, new int[] {(int)FragmetShaderColorMode.Cyan});
-                //         gl.PolygonMode(OpenGL.GL_FRONT_AND_BACK, OpenGL.GL_LINE);
-                //         gl.DrawElements(OpenGL.GL_LINES, normalIndexes.Count, OpenGL.GL_UNSIGNED_INT, IntPtr.Zero);
-                //     gl.BindVertexArray(0);
-                // }
+                if (_allowNormals.Active)
+                {
+                    gl.UseProgram(polygonNormalsShaderProgram);
+                    gl.BindVertexArray(normalsVAO); 
+                        transformationMatrixLocation = gl.GetUniformLocation(polygonNormalsShaderProgram, "transformation");
+                        gl.UniformMatrix4(transformationMatrixLocation, 1, false,  ToArray(_cameraTransformationMatrix));
+                        gl.Uniform1(gl.GetUniformLocation(polygonNormalsShaderProgram, "colorMode"), 1, new int[] {(int)FragmetShaderColorMode.Cyan});
+                        gl.PolygonMode(OpenGL.GL_FRONT_AND_BACK, OpenGL.GL_LINE);
+                        gl.DrawElements(OpenGL.GL_LINES, normalIndexes.Count, OpenGL.GL_UNSIGNED_INT, IntPtr.Zero);
+                    gl.BindVertexArray(0);
+                }
                 
                 gl.UseProgram(shaderProgram);
                 gl.BindVertexArray(manipulatePointsVAO);
                    gl.Uniform1(gl.GetUniformLocation(shaderProgram, "colorMode"), 1, new int[] {(int)FragmetShaderColorMode.Cyan});
                    gl.PolygonMode(OpenGL.GL_FRONT_AND_BACK, OpenGL.GL_FILL);
                    gl.Disable(OpenGL.GL_DEPTH_TEST);
+                   gl.PointSize(10);
                    gl.DrawArrays(OpenGL.GL_POINTS, 0, _kinematicSurface.GuideCurve.Points.Count);
+                   if (minInd != -1)
+                   {
+                       gl.Uniform1(gl.GetUniformLocation(shaderProgram, "colorMode"), 1, new int[] {(int)FragmetShaderColorMode.Orange});
+                       gl.DrawArrays(OpenGL.GL_POINTS, minInd, 1);
+                   }
                 gl.BindVertexArray(0);
 
                 #endregion

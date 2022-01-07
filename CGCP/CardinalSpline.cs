@@ -21,12 +21,12 @@ namespace CGCP
             
             for (int i = 1; i < Points.Count - 2; ++i)
             {
-                for (int j = 0; j <= quality; ++j)
+                for (int j = 0; j < quality; ++j)
                 {
                     result.Add(Interpolate(i, (float)j / (float)quality));
                 }
             }
-
+            result.Add(Interpolate(Points.Count - 3, 1));
             return result;
         }
 

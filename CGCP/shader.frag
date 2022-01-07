@@ -5,6 +5,7 @@ const int Green = 1;
 const int Cyan = 2;
 const int LightPaint = 3;
 const int None = 4;
+const int Orange = 5;
 
 struct Material {
 	vec3 k_a;
@@ -40,6 +41,8 @@ void main()
         fragColor = vec4(0.0f, 1.0f, 1.0f, 1.0f);
 	else if (colorMode == LightPaint)
 		fragColor = vec4(light.intensity, 1);
+	else if (colorMode == Orange)
+		fragColor = vec4(1.0f, 0.4f, 0.0f, 1.0f);
 	else {
 		//фоновая составляющая
 		vec3 I_a = material.k_a;
