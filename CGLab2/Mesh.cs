@@ -60,12 +60,6 @@ namespace CG
         public List<Polygon> Polygons;
         public List<Polygon> TransformedPolygons;
 
-        // public Mesh(List<Vertex> vertices, List<Polygon> polygons)
-        // {
-        //     Vertices = vertices;
-        //     Polygons = polygons;
-        // }
-        
         public Mesh(List<Vertex> vertices, List<List<int>> polygons)
         {
             Vertices = new List<Vertex>(vertices);
